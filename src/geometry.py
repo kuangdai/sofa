@@ -22,7 +22,7 @@ def truncate_curve(x, y, boundary, keep_right):
     return x, y
 
 
-def interp1d(x0, y0, x1, outside_value=0., x0_descending=False):
+def interp1d(x0, y0, x1, outside_value=0., x0_descending):
     if x0_descending:
         x0 = x0.flip(dims=[1])
         y0 = y0.flip(dims=[1])
