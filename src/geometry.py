@@ -113,19 +113,3 @@ def compute_area(alpha, ab, dab, n_area_samples=2000, return_outline=False):
         y_out = torch.cat((y_sample_lower[i, :loc], y_sample_upper[i, :loc].flip(dims=[0])), dim=0)
         outlines.append(torch.stack((x_out, y_out), dim=-1).detach())
     return area, outlines
-
-
-if __name__ == "__main__":
-    from src.net import SofaNet
-    import matplotlib.pyplot as plt
-
-    ab_initial = torch.tensor([[.3, .5], [.4, .7]])
-    model = SofaNet(ab_initial, hidden_sizes=[64, 64])
-    alpha_ = torch.linspace(0, torch.pi / 2, 101)
-    ab_, dab_ = model.forward(alpha_, compute_gradients=True)
-
-    areas, out = compute_area(alpha_, ab_, dab_, return_outline=True)
-    print(areas)
-    for j in range(len(ab_initial)):
-        plt.plot(out[j][:, 0].detach(), out[j][:, 1].detach())
-        plt.show()
