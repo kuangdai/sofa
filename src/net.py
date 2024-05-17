@@ -39,14 +39,12 @@ class SofaNet(nn.Module):
             x = torch.einsum("Nij,NBj->NBi", w, x) + b[:, None, :]
             x = torch.relu(x)
         x = torch.einsum("Nij,NBj->NBi", self.weights[-1], x) + self.biases[-1][:, None, :]
-
-        # gradient
-        if compute_gradients:
-            # autodiff by zcs
-            dummy = torch.ones_like(x, requires_grad=True)
-            omega = (dummy * x).sum()
-            omega_z = torch.autograd.grad(omega, z, create_graph=True)[0]
-            dx = torch.autograd.grad(omega_z, dummy, create_graph=True)[0]
-            return x, dx
-        else:
+        if not compute_gradients:
             return x
+
+        # gradient by zcs
+        dummy = torch.ones_like(x, requires_grad=True)
+        omega = (dummy * x).sum()
+        omega_z = torch.autograd.grad(omega, z, create_graph=True)[0]
+        dx = torch.autograd.grad(omega_z, dummy, create_graph=True)[0]
+        return x, dx
