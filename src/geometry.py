@@ -47,7 +47,7 @@ def interp1d(x0, y0, x1, x0_descending, outside_value=0.):
     return y1
 
 
-def compute_area(alpha, ab, dab, n_area_samples=2000):
+def compute_area(alpha, ab, dab, n_area_samples=2000, return_outline=False):
     # alpha shape: n
     # ab shape: m, n, 2
     m, n, _ = ab.shape
@@ -100,5 +100,32 @@ def compute_area(alpha, ab, dab, n_area_samples=2000):
 
     # area
     height = torch.clip(y_sample_upper - y_sample_lower, min=0, max=None)
-    area = (height * (x_sample[:, 1] - x_sample[:, 0])[:, None]).sum()
-    return area
+    area = (height * (x_sample[:, 1] - x_sample[:, 0])[:, None]).sum(dim=1) * 2
+    if not return_outline:
+        return area
+
+    # outline
+    outlines = []
+    for i in range(m):
+        lu_inter = torch.where(torch.less(y_sample_upper[i], y_sample_lower[i]))[0]
+        loc = lu_inter[0] if len(lu_inter) > 0 else n_area_samples
+        x_out = torch.cat((x_sample[i, :loc], x_sample[i, :loc].flip(dims=[0])), dim=0)
+        y_out = torch.cat((y_sample_lower[i, :loc], y_sample_upper[i, :loc].flip(dims=[0])), dim=0)
+        outlines.append(torch.stack((x_out, y_out), dim=-1).detach())
+    return area, outlines
+
+
+if __name__ == "__main__":
+    from src.net import SofaNet
+    import matplotlib.pyplot as plt
+
+    ab_initial = torch.tensor([[.3, .5], [.4, .7]])
+    model = SofaNet(ab_initial, hidden_sizes=[64, 64])
+    alpha_ = torch.linspace(0, torch.pi / 2, 101)
+    ab_, dab_ = model.forward(alpha_, compute_gradients=True)
+
+    areas, out = compute_area(alpha_, ab_, dab_, return_outline=True)
+    print(areas)
+    for j in range(len(ab_initial)):
+        plt.plot(out[j][:, 0].detach(), out[j][:, 1].detach())
+        plt.show()
