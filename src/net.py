@@ -36,9 +36,9 @@ class SofaNet(nn.Module):
 
         # layers
         for w, b in zip(self.weights[:-1], self.biases[:-1]):
-            x = torch.einsum("MNij,MNBj->MNBi", w, x) + b[:, None, :]
+            x = torch.einsum("MNij,MNBj->MNBi", w, x) + b[:, :, None, :]
             x = torch.relu(x)
-        x = torch.einsum("MNij,MNBj->MNBi", self.weights[-1], x) + self.biases[-1][:, None, :]
+        x = torch.einsum("MNij,MNBj->MNBi", self.weights[-1], x) + self.biases[-1][:, :, None, :]
 
         # gradient
         if compute_gradients:
