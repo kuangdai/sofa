@@ -41,10 +41,9 @@ def interp1d(x0, y0, x1, x0_descending, outside_value=0.):
     k = (yb - ya) / (eps + (xb - xa))
     y1 = ya + k * (x1 - xa)
 
-    # mask
-    mask = torch.full_like(x1, fill_value=outside_value)
+    # mask out of range
     y1 = torch.where(torch.logical_and(torch.greater_equal(x1, xa),
-                                       torch.less_equal(x1, xb)), y1, mask)
+                                       torch.less_equal(x1, xb)), y1, outside_value)
     return y1
 
 
