@@ -3,9 +3,9 @@ import torch.nn as nn
 
 
 class SofaNet(nn.Module):
-    def __init__(self, ab, hidden_sizes):
+    def __init__(self, ab_initial, hidden_sizes):
         super().__init__()
-        self.n_ab = ab.shape[0]
+        self.n_ab = ab_initial.shape[0]
 
         # weights
         weights, biases = [], []
@@ -16,7 +16,7 @@ class SofaNet(nn.Module):
 
         # initial condition
         weights[-1][:] = 0.
-        biases[-1][:] = ab[:]
+        biases[-1][:] = ab_initial[:]
 
         # trainable
         self.weights = nn.ParameterList(weights)
