@@ -2,17 +2,23 @@ import torch
 
 
 def truncate_curve(x, y, boundary, keep_right):
+    # boundary values
     m, n = x.shape
-    x_mask = x[torch.arange(m), boundary][:, None].expand(-1, n)
-    y_mask = y[torch.arange(m), boundary][:, None].expand(-1, n)
-    all_idx = torch.arange(n)[None, :].expand(m, -1)
+    m_range = torch.arange(m, device=x.device)
+    x_boundary = x[m_range, boundary][:, None].expand(-1, n)
+    y_boundary = y[m_range, boundary][:, None].expand(-1, n)
+
+    # masked range
+    n_range = torch.arange(n, device=x.device)[None, :].expand(m, -1)
     boundary = boundary[:, None].expand(-1, n)
     if keep_right:
-        cond = torch.greater_equal(all_idx, boundary)
+        cond = torch.greater_equal(n_range, boundary)
     else:
-        cond = torch.less_equal(all_idx, boundary)
-    x = torch.where(cond, x, x_mask)
-    y = torch.where(cond, y, y_mask)
+        cond = torch.less_equal(n_range, boundary)
+
+    # mask unwanted part with boundary values
+    x = torch.where(cond, x, x_boundary)
+    y = torch.where(cond, y, y_boundary)
     return x, y
 
 
