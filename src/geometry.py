@@ -48,11 +48,12 @@ def interp1d(x0, y0, x1, x0_descending, outside_value=0.):
 
 
 def compute_area(alpha, ab, dab, n_area_samples=2000):
-    # shape: [m, n]
-    alpha = alpha[None, :].expand(len(ab), -1)
-    m, n = alpha.shape
-    a, b = ab[:, 0], ab[:, 1]
-    da, db = dab[:, 0], dab[:, 1]
+    # alpha shape: n
+    # ab shape: m, n, 2
+    m, n, _ = ab.shape
+    alpha = alpha[None, :].expand(m, -1)
+    a, b = ab[..., 0], ab[..., 1]
+    da, db = dab[..., 0], dab[..., 1]
 
     # curve p
     xp = a * (torch.cos(alpha) - 1)
@@ -77,23 +78,24 @@ def compute_area(alpha, ab, dab, n_area_samples=2000):
     for i in range(m):
         corner_1st = torch.where(xv[i, 1:] - xv[i, :-1] > 0)[0]
         corner_1st = corner_1st[0] if len(corner_1st) > 0 else n - 1
-        corner_2nd = torch.argmax(xv[corner_1st:])
+        corner_2nd = torch.argmax(xv[i, corner_1st:])
         corners.append([corner_1st, corner_1st + corner_2nd])
     corners = torch.tensor(corners, device=alpha.device)
     xv1, yv1 = truncate_curve(xv, yv, corners[:, 0], keep_right=False)
     xv2, yv2 = truncate_curve(xv, yv, corners[:, 1], keep_right=True)
 
     # bottom
-    x_sample = torch.linspace(0, 1., n_area_samples, device=alpha.device)[None, :].expand(m, -1)
-    center = a[:, n // 2]
-    x_sample = center[:, None] + x_sample * (1. - center[:, None])
-    y_sample_p = interp1d(xp, yp, x_sample, x0_descending=True)
-    y_sample_u = interp1d(xu, yu, x_sample, x0_descending=False)
+    x_sample = torch.linspace(0, 1., n_area_samples,
+                              device=alpha.device)[None, :].expand(m, -1)
+    center = -a[:, n // 2][:, None]  # -a(pi / 2)
+    x_sample = center + x_sample * (1. - center)
+    y_sample_p = interp1d(xp, yp, x_sample, x0_descending=True, outside_value=0.)
+    y_sample_u = interp1d(xu, yu, x_sample, x0_descending=False, outside_value=0.)
     y_sample_lower = torch.maximum(y_sample_p, y_sample_u)
 
     # top
-    y_sample_v1 = interp1d(xv1, yv1, x_sample, outside_value=1., x0_descending=True)
-    y_sample_v2 = interp1d(xv2, yv2, x_sample, outside_value=1., x0_descending=True)
+    y_sample_v1 = interp1d(xv1, yv1, x_sample, x0_descending=True, outside_value=1.)
+    y_sample_v2 = interp1d(xv2, yv2, x_sample, x0_descending=True, outside_value=1.)
     y_sample_upper = torch.minimum(y_sample_v1, y_sample_v2)
 
     # area
