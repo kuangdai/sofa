@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class SofaNet(nn.Module):
-    def __init__(self, n_nets, hidden_sizes):
+    def __init__(self, n_nets, hidden_sizes, ab_lower=0.05, ab_upper=1.05):
         super().__init__()
         weights = []
         biases = []
@@ -14,6 +14,8 @@ class SofaNet(nn.Module):
         self.n_nets = n_nets
         self.weights = nn.ParameterList(weights)
         self.biases = nn.ParameterList(biases)
+        self.ab_lower = ab_lower
+        self.ab_upper = ab_upper
 
     def forward(self, alpha, compute_gradients=False):
         # expand size of alpha
@@ -32,8 +34,12 @@ class SofaNet(nn.Module):
             x = torch.einsum("nij,nbj->nbi", w, x) + b[:, None, :]
             x = torch.relu(x)
         x = torch.einsum("nij,nbj->nbi", self.weights[-1], x) + self.biases[-1][:, None, :]
-        x = torch.sigmoid(x)  # positivity
 
+        # range
+        x = torch.sigmoid(x)
+        x = self.ab_lower + (self.ab_upper - self.ab_lower) * x
+
+        # gradient
         if compute_gradients:
             # autodiff by zcs
             dummy = torch.ones_like(x, requires_grad=True)
