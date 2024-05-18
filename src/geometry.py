@@ -92,7 +92,8 @@ def compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=2000, return_outl
     # area sample
     x_sample = torch.linspace(0, 1., n_area_samples,
                               device=alpha.device)[None, :].expand(m, -1)
-    x_sample = -a + x_sample * (1. + a)
+    center = -a[:, n // 2][:, None]
+    x_sample = center + x_sample * (1. - center)
 
     # lower edge
     y_sample_p = interp1d_multi_curve(xp, yp, x_sample, outside_value=0., min_split_reduce=False)
