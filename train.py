@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 from tqdm import trange
 
-from src.geometry import compute_area
+from src.geometry import compute_area_ellipse
 from src.net import SofaNetEllipse
 
 if __name__ == "__main__":
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("--b-linspace", type=float, nargs="+",
                         default=[0.05, 1.0, 20], help="linear space of b")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
-                        default=[128, 128], help="hidden sizes of model")
+                        default=[128, 128, 128], help="hidden sizes of model")
     parser.add_argument("--n-alphas", type=int,
                         default=1001, help="number of alphas in [0, pi]")
     parser.add_argument("--n-area-samples", type=int,
@@ -48,8 +48,8 @@ if __name__ == "__main__":
     # train
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
-        a, b, da, db = model.forward(alpha, compute_gradients=True)
-        area = compute_area(alpha, a, b, da, db, n_area_samples=args.n_area_samples)
+        a, b, db_alpha = model.forward(alpha)
+        area = compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=args.n_area_samples)
         loss = -area.sum()  # using sum() so that nets are independently updated
         optimizer.zero_grad()
         loss.backward()
@@ -61,12 +61,14 @@ if __name__ == "__main__":
                                  loc=max_loc)
 
     # eval
-    a, b, da, db = model.forward(alpha, compute_gradients=True)
-    area, outline = compute_area(alpha, a, b, da, db, n_area_samples=args.n_area_samples, return_outline=True)
+    a, b, db_alpha = model.forward(alpha)
+    area, outline = compute_area_ellipse(alpha, a, b, db_alpha,
+                                         n_area_samples=args.n_area_samples, return_outline=True)
     max_area, max_loc = torch.max(area, dim=0)
     print(max_area.item())
     plt.figure(dpi=200)
-    plt.plot(outline[max_loc][:, 0], outline[max_loc][:, 1])
+    plt.plot(outline[max_loc][0], outline[max_loc][1])
+    plt.plot(outline[max_loc][0], outline[max_loc][2])
     plt.savefig("outputs/outline.png")
 
     # save
