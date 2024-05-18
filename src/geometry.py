@@ -51,19 +51,19 @@ def interp1d(x0, y0, x1, outside_value=0.):
     return y1
 
 
-def interp1d_multi_curve(xs, ys, x_target, outside_value, min_split_reduce):
+def interp1d_multi_curve(xs, ys, x_targets, outside_value, min_split_reduce):
     minmax = torch.min if min_split_reduce else torch.max
     # loop over curves
     # TODO: this seems hard to vectorise because number of splits are unequal
-    out = torch.empty((len(xs), len(x_target)), device=x_target.device)
-    for i, (x, y) in enumerate(zip(xs, ys)):
+    out = torch.empty_like(x_targets)
+    for i, (x, y, x_tar) in enumerate(zip(xs, ys, x_targets)):
         # split curve
         x_splits, y_splits = split_curve(x, y)
         # loop over splits
         # TODO: this may be vectorised if we pad splits to same length; still, hard to implement
-        out_i = torch.empty((len(x_splits), len(x_target)), device=x_target.device)
+        out_i = torch.empty((len(x_splits), len(x_tar)), device=x_tar.device)
         for j, (x_split, y_split) in enumerate(zip(x_splits, y_splits)):
-            out_i[j] = interp1d(x_split, y_split, x_target, outside_value=outside_value)
+            out_i[j] = interp1d(x_split, y_split, x_tar, outside_value=outside_value)
         out[i] = minmax(out_i, dim=0)[0]
     return out
 
