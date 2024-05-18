@@ -57,7 +57,7 @@ if __name__ == "__main__":
         scheduler.step()
         max_area, max_loc = torch.max(area, dim=0)
         max_a, max_b = ab[max_loc]
-        progress_bar.set_postfix(area=f"{max_area.item():.4e}", ab=[max_a.item(), max_b.item()])
+        progress_bar.set_postfix(area=f"{max_area.item():.4e}", ab=f"[{max_a.item():.2f}, {max_b.item():.2f}]")
 
     # eval
     a, b, da, db = model.forward(alpha, compute_gradients=True)
