@@ -10,10 +10,10 @@ from src.net import SofaNetEllipse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Pretrain ellipse",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--a-linspace", type=float, nargs="+",
-                        default=[0.05, 1.0, 20], help="linear space of a")
-    parser.add_argument("--b-linspace", type=float, nargs="+",
-                        default=[0.05, 1.0, 20], help="linear space of b")
+    parser.add_argument("--a-initial", type=float, nargs="+",
+                        default=[0.05, 1.0, 20], help="initial values of a")
+    parser.add_argument("--b-initial", type=float, nargs="+",
+                        default=[0.05, 1.0, 20], help="initial values of b")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
     parser.add_argument("--n-alphas", type=int,
@@ -33,8 +33,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # a and b
-    a = torch.linspace(args.a_linspace[0], args.a_linspace[1], int(args.a_linspace[2]))
-    b = torch.linspace(args.b_linspace[0], args.b_linspace[1], int(args.b_linspace[2]))
+    if len(args.a_initial) == 3:
+        a = torch.linspace(args.a_initial[0], args.a_initial[1], int(args.a_initial[2]))
+    else:
+        assert len(args.a_initial) == 1
+        a = torch.tensor((args.a_initial[0]))
+    if len(args.b_initial) == 3:
+        b = torch.linspace(args.b_initial[0], args.b_initial[1], int(args.b_initial[2]))
+    else:
+        assert len(args.b_initial) == 1
+        b = torch.tensor((args.b_initial[0]))
     ab0 = torch.stack(torch.meshgrid(a, b, indexing="ij"), dim=-1).reshape(-1, 2).to(args.device)
 
     # model
