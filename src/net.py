@@ -23,14 +23,6 @@ class SofaNetEllipse(nn.Module):
         self.biases = nn.ParameterList(biases)
 
     def forward(self, alpha, compute_gradients=True):
-        #####
-        # a #
-        #####
-        a = (self.sqrt_a ** 2)[:, None].expand(-1, len(alpha))
-
-        #####
-        # b #
-        #####
         # expand size of alpha
         alpha = alpha[None, :, None].expand(self.n_ab, -1, -1)
 
@@ -49,6 +41,8 @@ class SofaNetEllipse(nn.Module):
         x = torch.einsum("Nij,NBj->NBi", self.weights[-1], x) + self.biases[-1][:, None, :]
         b = (x ** 2).squeeze(2)
 
+        # a
+        a = self.sqrt_a ** 2
         if not compute_gradients:
             return a, b
 
@@ -56,6 +50,5 @@ class SofaNetEllipse(nn.Module):
         dummy = torch.ones_like(b, requires_grad=True)
         omega = (dummy * b).sum()
         omega_z = torch.autograd.grad(omega, z, create_graph=True)[0]
-        db = torch.autograd.grad(omega_z, dummy, create_graph=True)[0]
-        da = torch.zeros_like(db)
-        return a, b, da, db
+        db_alpha = torch.autograd.grad(omega_z, dummy, create_graph=True)[0]
+        return a, b, db_alpha
