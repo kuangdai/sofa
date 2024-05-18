@@ -18,7 +18,7 @@ class SofaNetEllipse(nn.Module):
             weights.append(torch.randn(self.n_ab, hidden_sizes[i + 1], hidden_sizes[i]))
             biases.append(torch.zeros(self.n_ab, hidden_sizes[i + 1]))
         weights[-1][:] = 0.
-        biases[-1][:] = torch.sqrt(ab_initial[:, 1])
+        biases[-1][:, 0] = torch.sqrt(ab_initial[:, 1])
         self.weights = nn.ParameterList(weights)
         self.biases = nn.ParameterList(biases)
 
