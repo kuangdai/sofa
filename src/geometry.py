@@ -106,7 +106,7 @@ def compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=2000, return_outl
     y_sample_upper = torch.clamp(y_sample_upper, min=0., max=1.)
 
     # area
-    height = torch.clamp(y_sample_upper - y_sample_lower, min=0, max=None)
+    height = torch.clamp(y_sample_upper - y_sample_lower, min=0., max=None)
     area = (height * (x_sample[:, 1] - x_sample[:, 0])[:, None]).sum(dim=1) * 2
     if not return_outline:
         return area
