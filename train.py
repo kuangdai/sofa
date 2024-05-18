@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     # model
     model = SofaNetEllipse(ab0, hidden_sizes=args.hidden_sizes).to(args.device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 
     # alpha
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         max_a, max_b = ab0[max_loc]
         progress_bar.set_postfix(area=f"{max_area.item():.4e}",
                                  ab0=f"[{max_a.item():.2f}, {max_b.item():.2f}]",
-                                 loc=max_loc)
+                                 index=max_loc.item())
 
     # eval
     a, b, db_alpha = model.forward(alpha)
