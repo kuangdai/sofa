@@ -35,10 +35,10 @@ if __name__ == "__main__":
     # a and b
     a = torch.linspace(args.a_linspace[0], args.a_linspace[1], int(args.a_linspace[2]))
     b = torch.linspace(args.b_linspace[0], args.b_linspace[1], int(args.b_linspace[2]))
-    ab = torch.stack(torch.meshgrid(a, b, indexing="ij"), dim=-1).reshape(-1, 2).to(args.device)
+    ab0 = torch.stack(torch.meshgrid(a, b, indexing="ij"), dim=-1).reshape(-1, 2).to(args.device)
 
     # model
-    model = SofaNetEllipse(ab, hidden_sizes=args.hidden_sizes).to(args.device)
+    model = SofaNetEllipse(ab0, hidden_sizes=args.hidden_sizes).to(args.device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 
@@ -56,8 +56,9 @@ if __name__ == "__main__":
         optimizer.step()
         scheduler.step()
         max_area, max_loc = torch.max(area, dim=0)
-        max_a, max_b = ab[max_loc]
-        progress_bar.set_postfix(area=f"{max_area.item():.4e}", ab=f"[{max_a.item():.2f}, {max_b.item():.2f}]",
+        max_a, max_b = ab0[max_loc]
+        progress_bar.set_postfix(area=f"{max_area.item():.4e}",
+                                 ab0=f"[{max_a.item():.2f}, {max_b.item():.2f}]",
                                  loc=max_loc)
 
     # eval
@@ -65,7 +66,7 @@ if __name__ == "__main__":
     area, outline = compute_area_ellipse(alpha, a, b, db_alpha,
                                          n_area_samples=args.n_area_samples, return_outline=True)
     max_area, max_loc = torch.max(area, dim=0)
-    print(max_area.item())
+    print("max area:", max_area.item())
     plt.figure(dpi=200)
     plt.plot(outline[max_loc][0], outline[max_loc][1])
     plt.plot(outline[max_loc][0], outline[max_loc][2])
