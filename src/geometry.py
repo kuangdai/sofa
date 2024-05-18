@@ -47,13 +47,11 @@ def interp1d(x0, y0, x1, x0_descending, outside_value=0.):
     return y1
 
 
-def compute_area(alpha, ab, dab, n_area_samples=2000, return_outline=False):
+def compute_area(alpha, a, b, da, db, n_area_samples=2000, return_outline=False):
     # alpha shape: n
     # ab shape: m, n, 2
-    m, n, _ = ab.shape
+    m, n = a.shape
     alpha = alpha[None, :].expand(m, -1)
-    a, b = ab[..., 0], ab[..., 1]
-    da, db = dab[..., 0], dab[..., 1]
 
     # curve p
     xp = a * (torch.cos(alpha) - 1)
