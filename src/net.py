@@ -8,6 +8,7 @@ class SofaNetEllipse(nn.Module):
         self.n_ab = ab_initial.shape[0]
 
         # parameter for a
+        # train square root to make sure (a, b) are positive
         self.sqrt_a = nn.Parameter(torch.sqrt(ab_initial[:, 0]))
 
         # net for b
@@ -21,7 +22,7 @@ class SofaNetEllipse(nn.Module):
         self.weights = nn.ParameterList(weights)
         self.biases = nn.ParameterList(biases)
 
-    def forward(self, alpha, compute_gradients=False):
+    def forward(self, alpha, compute_gradients=True):
         #####
         # a #
         #####
@@ -38,7 +39,7 @@ class SofaNetEllipse(nn.Module):
         if compute_gradients:
             alpha = alpha + z
 
-        # parity
+        # symmetry
         x = torch.sin(alpha)
 
         # layers
@@ -49,12 +50,12 @@ class SofaNetEllipse(nn.Module):
         b = (x ** 2).squeeze(2)
 
         if not compute_gradients:
-            return torch.stack((a, b), dim=2)
+            return a, b
 
         # gradient by zcs
-        dummy = torch.ones_like(x, requires_grad=True)
+        dummy = torch.ones_like(b, requires_grad=True)
         omega = (dummy * b).sum()
         omega_z = torch.autograd.grad(omega, z, create_graph=True)[0]
         db = torch.autograd.grad(omega_z, dummy, create_graph=True)[0]
         da = torch.zeros_like(db)
-        return torch.stack((a, b), dim=2), torch.stack((da, db), dim=2)
+        return a, b, da, db
