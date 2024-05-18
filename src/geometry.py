@@ -53,9 +53,14 @@ def interp1d(x0, y0, x1, outside_value=0.):
 
 def interp1d_multi_curve(xs, ys, x_target, outside_value, min_split_reduce):
     minmax = torch.min if min_split_reduce else torch.max
+    # loop over curves
+    # TODO: this seems hard to vectorise because number of splits are unequal
     out = torch.empty((len(xs), len(x_target)), device=x_target.device)
     for i, (x, y) in enumerate(zip(xs, ys)):
+        # split curve
         x_splits, y_splits = split_curve(x, y)
+        # loop over splits
+        # TODO: this may be vectorised if we pad splits to same length; still, hard to implement
         out_i = torch.empty((len(x_splits), len(x_target)), device=x_target.device)
         for j, (x_split, y_split) in enumerate(zip(x_splits, y_splits)):
             out_i[j] = interp1d(x_split, y_split, x_target, outside_value=outside_value)
@@ -84,16 +89,18 @@ def compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=2000, return_outl
     xv = xu + torch.cos(alpha / 2)
     yv = yu + torch.sin(alpha / 2)
 
-    # sample
+    # area sample
     x_sample = torch.linspace(0, 1., n_area_samples,
                               device=alpha.device)[None, :].expand(m, -1)
     x_sample = -a + x_sample * (1. + a)
+
+    # lower edge
     y_sample_p = interp1d_multi_curve(xp, yp, x_sample, outside_value=0., min_split_reduce=False)
     y_sample_u = interp1d_multi_curve(xu, yu, x_sample, outside_value=0., min_split_reduce=False)
     y_sample_lower = torch.maximum(y_sample_p, y_sample_u)
     y_sample_lower = torch.clamp(y_sample_lower, min=0., max=1.)
 
-    # top
+    # upper edge
     y_sample_upper = interp1d_multi_curve(xv, yv, x_sample, outside_value=1., min_split_reduce=True)
     y_sample_upper = torch.clamp(y_sample_upper, min=0., max=1.)
 
