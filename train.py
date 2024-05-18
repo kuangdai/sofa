@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     # model
     model = SofaNetEllipse(ab0, hidden_sizes=args.hidden_sizes).to(args.device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 
     # alpha
