@@ -1,57 +1,74 @@
 import torch
 
 
-def truncate_curve(x, y, boundary, keep_right):
-    # boundary values
-    m, n = x.shape
-    m_range = torch.arange(m, device=x.device)
-    x_boundary = x[m_range, boundary][:, None].expand(-1, n)
-    y_boundary = y[m_range, boundary][:, None].expand(-1, n)
+def split_curve(x, y):
+    assert len(x) >= 3
 
-    # masked range
-    n_range = torch.arange(n, device=x.device)[None, :].expand(m, -1)
-    boundary = boundary[:, None].expand(-1, n)
-    if keep_right:
-        cond = torch.greater_equal(n_range, boundary)
-    else:
-        cond = torch.less_equal(n_range, boundary)
+    # location of saddle
+    x0 = x[0:-2]
+    x1 = x[1:-1]
+    x2 = x[2:]
+    saddle = torch.where((x2 - x1) * (x1 - x0) < 0)[0] + 1
+    saddle = torch.cat((torch.tensor([0], device=x.device),
+                        saddle,
+                        torch.tensor([len(x)], device=x.device)))
 
-    # mask unwanted part with boundary values
-    x = torch.where(cond, x, x_boundary)
-    y = torch.where(cond, y, y_boundary)
-    return x, y
+    # split: [..., saddle - 1], [saddle, ...]
+    split = list(torch.diff(saddle))
+    x_splits = list(torch.split(x, split))
+    y_splits = list(torch.split(y, split))
+
+    # append saddle to left: [..., saddle - 1, saddle], [saddle, ...]
+    for i in range(len(x_splits) - 1):
+        x_splits[i] = torch.cat((x_splits[i], x_splits[i + 1][:1]))
+        y_splits[i] = torch.cat((y_splits[i], y_splits[i + 1][:1]))
+    return x_splits, y_splits
 
 
-def interp1d(x0, y0, x1, x0_descending, outside_value=0.):
-    if x0_descending:
-        x0 = x0.flip(dims=[1])
-        y0 = y0.flip(dims=[1])
+def interp1d(x0, y0, x1, outside_value=0.):
+    assert len(x0) >= 2
 
-    # indexing
+    # flip if x0 is descending
+    if x0[-1] < x0[0]:
+        x0 = x0.flip(dims=[0])
+        y0 = y0.flip(dims=[0])
+
+    # start-end values
     idx = torch.searchsorted(x0, x1)
     idx -= 1
-    idx = idx.clamp(0, x0.shape[1] - 1 - 1)
-    xa = torch.gather(x0, 1, idx)
-    ya = torch.gather(y0, 1, idx)
-    xb = torch.gather(x0, 1, idx + 1)
-    yb = torch.gather(y0, 1, idx + 1)
+    idx = idx.clamp(0, len(x0) - 1 - 1)
+    xa, ya = x0[idx], y0[idx]
+    xb, yb = x0[idx + 1], y0[idx + 1]
 
-    # linear
+    # linear interpolation
     eps = torch.finfo(x0.dtype).eps
     k = (yb - ya) / (eps + (xb - xa))
     y1 = ya + k * (x1 - xa)
 
-    # mask out of range
+    # mask those out of range
     y1 = torch.where(torch.logical_and(torch.greater_equal(x1, xa),
                                        torch.less_equal(x1, xb)), y1, outside_value)
     return y1
 
 
-def compute_area(alpha, a, b, da, db, n_area_samples=2000, return_outline=False):
+def interp1d_multi_curve(xs, ys, x_target, outside_value, min_split_reduce):
+    minmax = torch.min if min_split_reduce else torch.max
+    out = torch.empty((len(xs), len(x_target)), device=x_target.device)
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        x_splits, y_splits = split_curve(x, y)
+        out_i = torch.empty((len(x_splits), len(x_target)), device=x_target.device)
+        for j, (x_split, y_split) in enumerate(zip(x_splits, y_splits)):
+            out_i[j] = interp1d(x_split, y_split, x_target, outside_value=outside_value)
+        out[i] = minmax(out_i, dim=0)[0]
+    return out
+
+
+def compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=2000, return_outline=False):
     # alpha shape: n
     # ab shape: m, n, 2
-    m, n = a.shape
+    m, n = b.shape
     alpha = alpha[None, :].expand(m, -1)
+    a = a[:, None].expand(-1, n)
 
     # curve p
     xp = a * (torch.cos(alpha) - 1)
@@ -59,7 +76,7 @@ def compute_area(alpha, a, b, da, db, n_area_samples=2000, return_outline=False)
 
     # curve u
     c = a - b
-    dc = da - db
+    dc = - db_alpha
     xu = 2 * torch.sin(alpha / 2) ** 2 * (torch.cos(alpha) * c + torch.sin(alpha) * dc)
     yu = -4 * torch.cos(alpha / 2) ** 2 * torch.sin(alpha / 2) * (torch.cos(alpha / 2) * c + torch.sin(alpha / 2) * dc)
 
@@ -67,37 +84,21 @@ def compute_area(alpha, a, b, da, db, n_area_samples=2000, return_outline=False)
     xv = xu + torch.cos(alpha / 2)
     yv = yu + torch.sin(alpha / 2)
 
-    # outer branch of u
-    corner = torch.argmax(yu, dim=1)
-    xu, yu = truncate_curve(xu, yu, corner, keep_right=True)
-
-    # two branches of v
-    corners = []
-    for i in range(m):
-        corner_1st = torch.where(xv[i, 1:] - xv[i, :-1] > 0)[0]
-        corner_1st = corner_1st[0] if len(corner_1st) > 0 else n - 1
-        corner_2nd = torch.argmax(xv[i, corner_1st:])
-        corners.append([corner_1st, corner_1st + corner_2nd])
-    corners = torch.tensor(corners, device=alpha.device)
-    xv1, yv1 = truncate_curve(xv, yv, corners[:, 0], keep_right=False)
-    xv2, yv2 = truncate_curve(xv, yv, corners[:, 1], keep_right=True)
-
-    # bottom
+    # sample
     x_sample = torch.linspace(0, 1., n_area_samples,
                               device=alpha.device)[None, :].expand(m, -1)
-    center = -a[:, n // 2][:, None]  # -a(pi / 2)
-    x_sample = center + x_sample * (1. - center)
-    y_sample_p = interp1d(xp, yp, x_sample, x0_descending=True, outside_value=0.)
-    y_sample_u = interp1d(xu, yu, x_sample, x0_descending=False, outside_value=0.)
+    x_sample = -a + x_sample * (1. + a)
+    y_sample_p = interp1d_multi_curve(xp, yp, x_sample, outside_value=0., min_split_reduce=False)
+    y_sample_u = interp1d_multi_curve(xu, yu, x_sample, outside_value=0., min_split_reduce=False)
     y_sample_lower = torch.maximum(y_sample_p, y_sample_u)
+    y_sample_lower = torch.clamp(y_sample_lower, min=0., max=1.)
 
     # top
-    y_sample_v1 = interp1d(xv1, yv1, x_sample, x0_descending=True, outside_value=1.)
-    y_sample_v2 = interp1d(xv2, yv2, x_sample, x0_descending=True, outside_value=1.)
-    y_sample_upper = torch.minimum(y_sample_v1, y_sample_v2)
+    y_sample_upper = interp1d_multi_curve(xv, yv, x_sample, outside_value=1., min_split_reduce=True)
+    y_sample_upper = torch.clamp(y_sample_upper, min=0., max=1.)
 
     # area
-    height = torch.clip(y_sample_upper - y_sample_lower, min=0, max=None)
+    height = torch.clamp(y_sample_upper - y_sample_lower, min=0, max=None)
     area = (height * (x_sample[:, 1] - x_sample[:, 0])[:, None]).sum(dim=1) * 2
     if not return_outline:
         return area
@@ -105,9 +106,8 @@ def compute_area(alpha, a, b, da, db, n_area_samples=2000, return_outline=False)
     # outline
     outlines = []
     for i in range(m):
-        lu_inter = torch.where(torch.less(y_sample_upper[i], y_sample_lower[i]))[0]
-        loc = lu_inter[0] if len(lu_inter) > 0 else n_area_samples
-        x_out = torch.cat((x_sample[i, :loc], x_sample[i, :loc].flip(dims=[0])), dim=0)
-        y_out = torch.cat((y_sample_lower[i, :loc], y_sample_upper[i, :loc].flip(dims=[0])), dim=0)
-        outlines.append(torch.stack((x_out, y_out), dim=-1).detach())
+        lu_idx = torch.where(torch.greater_equal(y_sample_upper[i], y_sample_lower[i]))[0]
+        outlines.append((x_sample[i, lu_idx].detach(),
+                         y_sample_lower[i, lu_idx].detach(),
+                         y_sample_upper[i, lu_idx].detach()))
     return area, outlines
