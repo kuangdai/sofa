@@ -22,14 +22,13 @@ class SofaNetEllipse(nn.Module):
         self.weights = nn.ParameterList(weights)
         self.biases = nn.ParameterList(biases)
 
-    def forward(self, alpha, compute_gradients=True):
+    def forward(self, alpha):
         # expand size of alpha
         alpha = alpha[None, :, None].expand(self.n_ab, -1, -1)
 
         # zcs
         z = torch.tensor(0., requires_grad=True, device=alpha.device)
-        if compute_gradients:
-            alpha = alpha + z
+        alpha = alpha + z
 
         # symmetry
         x = torch.sin(alpha)
@@ -43,8 +42,6 @@ class SofaNetEllipse(nn.Module):
 
         # a
         a = self.sqrt_a ** 2
-        if not compute_gradients:
-            return a, b
 
         # gradient by zcs
         dummy = torch.ones_like(b, requires_grad=True)
