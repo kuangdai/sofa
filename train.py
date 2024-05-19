@@ -32,6 +32,8 @@ if __name__ == "__main__":
                         default=10000, help="number of epochs")
     parser.add_argument("--device", type=str,
                         default="cpu", help="training device")
+    parser.add_argument("--no-progress-bar", action="store_true",
+                        help="no progress bar")
     args = parser.parse_args()
 
     # a and b
@@ -56,7 +58,7 @@ if __name__ == "__main__":
     alpha = torch.linspace(0, torch.pi, args.n_alphas).to(args.device)
 
     # train
-    progress_bar = trange(args.epochs)
+    progress_bar = trange(args.epochs, disable=args.no_progress_bar)
     for epoch in progress_bar:
         xp, yp, xp_prime, yp_prime = model.forward(alpha)
         area = compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=args.n_area_samples)
