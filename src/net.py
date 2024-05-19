@@ -23,15 +23,13 @@ class SofaNetEllipse(nn.Module):
         self.biases = nn.ParameterList(biases)
 
     def forward(self, alpha):
-        # expand size of alpha
-        alpha = alpha[None, :, None].expand(self.n_ab, -1, -1)
+        # take half of alpha for mirror symmetry
+        assert len(alpha) % 2 == 1 and torch.isclose(alpha[len(alpha) // 2], torch.tensor(torch.pi / 2))
+        x = alpha[None, len(alpha) // 2 + 1, None].expand(self.n_ab, -1, -1)
 
         # zcs
         z = torch.tensor(0., requires_grad=True, device=alpha.device)
-        alpha = alpha + z
-
-        # symmetry
-        x = torch.sin(alpha)
+        x = x + z
 
         # layers
         for weight, bias in zip(self.weights[:-1], self.biases[:-1]):
@@ -39,7 +37,6 @@ class SofaNetEllipse(nn.Module):
             x = torch.relu(x)
         x = torch.einsum("Nij,NBj->NBi", self.weights[-1], x) + self.biases[-1][:, None, :]
         b = (x ** 2).squeeze(2)
-        alpha = alpha.squeeze(2)
 
         # gradient by zcs
         dummy = torch.ones_like(b, requires_grad=True)
@@ -47,8 +44,13 @@ class SofaNetEllipse(nn.Module):
         omega_z = torch.autograd.grad(omega, z, create_graph=True)[0]
         db_alpha = torch.autograd.grad(omega_z, dummy, create_graph=True)[0]
 
+        # mirror symmetry
+        b = torch.cat((b, b[:, :-1].flip(dims=[1])), dim=1)
+        db_alpha = torch.cat((db_alpha, -db_alpha[:, :-1].flip(dims=[1])), dim=1)
+
         # curve p
-        a = (self.sqrt_a ** 2)[:, None].expand(-1, b.shape[1])
+        a = (self.sqrt_a ** 2)[:, None].expand(-1, len(alpha))
+        alpha = alpha[None, :].expand(self.n_ab, -1)
         xp = a * (torch.cos(alpha) - 1)
         yp = b * torch.sin(alpha)
         xp_prime = -a * torch.sin(alpha)
