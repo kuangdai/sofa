@@ -74,6 +74,10 @@ def compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=2000, return_
     alpha = alpha[None, :].expand(m, -1)
     xu = xp - torch.sin(alpha) * xp_prime + (torch.cos(alpha) - 1) * yp_prime
     yu = yp + (1 + torch.cos(alpha)) * xp_prime + torch.sin(alpha) * yp_prime
+    # handle the case where u is a point at zero
+    if torch.isclose(xu, torch.zeros_like(xu)).all() and torch.isclose(yu, torch.zeros_like(yu)).all():
+        xu[:] = 0.
+        yu[:] = 0.
     xv = xu + torch.cos(alpha / 2)
     yv = yu + torch.sin(alpha / 2)
 
