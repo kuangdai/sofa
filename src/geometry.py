@@ -68,31 +68,12 @@ def interp1d_multi_curve(xs, ys, x_targets, outside_value, min_split_reduce):
     return out
 
 
-def compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=2000, return_outline=False):
-    # alpha shape: n
-    # ab shape: m, n, 2
-    m, n = b.shape
-    alpha = alpha[None, :].expand(m, -1)
-    a = a[:, None].expand(-1, n)
-
-    # curve p
-    xp = a * (torch.cos(alpha) - 1)
-    yp = b * torch.sin(alpha)
-
-    # curve u
-    c = a - b
-    dc = - db_alpha
-    xu = 2 * torch.sin(alpha / 2) ** 2 * (torch.cos(alpha) * c + torch.sin(alpha) * dc)
-    yu = -4 * torch.cos(alpha / 2) ** 2 * torch.sin(alpha / 2) * (torch.cos(alpha / 2) * c + torch.sin(alpha / 2) * dc)
-
-    # curve v
-    xv = xu + torch.cos(alpha / 2)
-    yv = yu + torch.sin(alpha / 2)
-
+def compute_area(xp, yp, xu, yu, xv, yv, n_area_samples=2000, return_outline=False):
     # area sample
+    m, n = xp.shape
     x_sample = torch.linspace(0, 1., n_area_samples,
-                              device=alpha.device)[None, :].expand(m, -1)
-    center = -a[:, n // 2][:, None]
+                              device=xp.device)[None, :].expand(m, -1)
+    center = xp[:, n // 2][:, None]
     x_sample = center + x_sample * (1. - center)
 
     # lower edge
@@ -119,3 +100,32 @@ def compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=2000, return_outl
                          y_sample_lower[i, lu_idx].detach(),
                          y_sample_upper[i, lu_idx].detach()))
     return area, outlines
+
+
+def compute_curves_ellipse(alpha, a, b, db_alpha):
+    # alpha shape: n
+    # ab shape: m, n, 2
+    m, n = b.shape
+    alpha = alpha[None, :].expand(m, -1)
+    a = a[:, None].expand(-1, n)
+
+    # curve p
+    xp = a * (torch.cos(alpha) - 1)
+    yp = b * torch.sin(alpha)
+
+    # curve u
+    c = a - b
+    dc = - db_alpha
+    xu = 2 * torch.sin(alpha / 2) ** 2 * (torch.cos(alpha) * c + torch.sin(alpha) * dc)
+    yu = -4 * torch.cos(alpha / 2) ** 2 * torch.sin(alpha / 2) * (torch.cos(alpha / 2) * c + torch.sin(alpha / 2) * dc)
+
+    # curve v
+    xv = xu + torch.cos(alpha / 2)
+    yv = yu + torch.sin(alpha / 2)
+
+    return xp, yp, xu, yu, xv, yv
+
+
+def compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=2000, return_outline=False):
+    return compute_area(*compute_curves_ellipse(alpha, a, b, db_alpha),
+                        n_area_samples=n_area_samples, return_outline=return_outline)
