@@ -34,7 +34,7 @@ class SofaNetEllipse(nn.Module):
         # layers
         for weight, bias in zip(self.weights[:-1], self.biases[:-1]):
             x = torch.einsum("Nij,NBj->NBi", weight, x) + bias[:, None, :]
-            x = torch.relu(x)
+            x = torch.tanh(x)
         x = torch.einsum("Nij,NBj->NBi", self.weights[-1], x) + self.biases[-1][:, None, :]
         b = (x ** 2).squeeze(2)
 
