@@ -7,6 +7,8 @@ from tqdm import trange
 from src.geometry import compute_area_ellipse
 from src.net import SofaNetEllipse
 
+torch.set_default_dtype(torch.float64)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Pretrain ellipse",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
