@@ -25,7 +25,7 @@ class SofaNetEllipse(nn.Module):
     def forward(self, alpha):
         # take half of alpha for mirror symmetry
         assert len(alpha) % 2 == 1 and torch.isclose(alpha[len(alpha) // 2], torch.tensor(torch.pi / 2))
-        x = alpha[None, len(alpha) // 2 + 1, None].expand(self.n_ab, -1, -1)
+        x = alpha[None, :len(alpha) // 2 + 1, None].expand(self.n_ab, -1, -1)
 
         # zcs
         z = torch.tensor(0., requires_grad=True, device=alpha.device)
