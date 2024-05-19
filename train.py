@@ -32,7 +32,7 @@ if __name__ == "__main__":
                         default=10000, help="number of epochs")
     parser.add_argument("--device", type=str,
                         default="cpu", help="training device")
-    parser.add_argument("--no-progress-bar", action="store_false",
+    parser.add_argument("--no-progress-bar", action="store_true",
                         help="no progress bar")
     args = parser.parse_args()
 
