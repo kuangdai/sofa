@@ -39,18 +39,10 @@ class SofaNetEllipse(nn.Module):
             x = torch.relu(x)
         x = torch.einsum("Nij,NBj->NBi", self.weights[-1], x) + self.biases[-1][:, None, :]
         b = (x ** 2).squeeze(2)
-        alpha = alpha.squeeze(2)
 
         # gradient by zcs
         dummy = torch.ones_like(b, requires_grad=True)
         omega = (dummy * b).sum()
         omega_z = torch.autograd.grad(omega, z, create_graph=True)[0]
         db_alpha = torch.autograd.grad(omega_z, dummy, create_graph=True)[0]
-
-        # curve p
-        a = (self.sqrt_a ** 2)[:, None].expand(-1, b.shape[1])
-        xp = a * (torch.cos(alpha) - 1)
-        yp = b * torch.sin(alpha)
-        xp_prime = -a * torch.sin(alpha)
-        yp_prime = b * torch.cos(alpha) + db_alpha * torch.sin(alpha)
-        return xp, yp, xp_prime, yp_prime
+        return self.sqrt_a ** 2, b, db_alpha

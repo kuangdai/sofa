@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 from tqdm import trange
 
-from src.geometry import compute_area
+from src.geometry import compute_area_ellipse
 from src.net import SofaNetEllipse
 
 torch.set_default_dtype(torch.float64)
@@ -58,8 +58,8 @@ if __name__ == "__main__":
     # train
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
-        xp, yp, xp_prime, yp_prime = model.forward(alpha)
-        area = compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=args.n_area_samples)
+        a, b, db_alpha = model.forward(alpha)
+        area = compute_area_ellipse(alpha, a, b, db_alpha, n_area_samples=args.n_area_samples)
         loss = -area.sum()  # using sum() so that nets are independently updated
         optimizer.zero_grad()
         loss.backward()
@@ -72,9 +72,9 @@ if __name__ == "__main__":
                                  index=max_loc.item())
 
     # eval
-    xp, yp, xp_prime, yp_prime = model.forward(alpha)
-    area, outline = compute_area(alpha, xp, yp, xp_prime, yp_prime,
-                                 n_area_samples=args.n_area_samples, return_outline=True)
+    a, b, db_alpha = model.forward(alpha)
+    area, outline = compute_area_ellipse(alpha, a, b, db_alpha,
+                                         n_area_samples=args.n_area_samples, return_outline=True)
     max_area, max_loc = torch.max(area, dim=0)
     print("max area:", max_area.item())
     plt.figure(dpi=200)
