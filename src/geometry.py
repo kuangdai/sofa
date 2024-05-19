@@ -106,7 +106,7 @@ def compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=2000, return_
     # outline
     outlines = []
     for i in range(m):
-        lu_idx = torch.where(torch.greater_equal(y_sample_upper[i], y_sample_lower[i]))[0]
+        lu_idx = torch.where(torch.greater(y_sample_upper[i], y_sample_lower[i]))[0]
         outlines.append((x_sample[i, lu_idx].detach(),
                          y_sample_lower[i, lu_idx].detach(),
                          y_sample_upper[i, lu_idx].detach()))
