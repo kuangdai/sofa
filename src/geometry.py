@@ -66,18 +66,25 @@ def interp1d_multi_section(x, y, x_tar, outside_value, min_split_reduce):
 
 
 def compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=2000, return_outline=False):
-    # curve u and v
+    # curve u
     xu = xp - torch.sin(alpha) * xp_prime + (torch.cos(alpha) - 1) * yp_prime
     yu = yp + (1 + torch.cos(alpha)) * xp_prime + torch.sin(alpha) * yp_prime
-    # handle the case where u is a point at zero
+    # handle the case where u is a point at zero, which may cause nan
     if torch.isclose(xu, torch.zeros_like(xu)).all() and torch.isclose(yu, torch.zeros_like(yu)).all():
         xu[:] = 0.
         yu[:] = 0.
+
+    # curve q
+    sqrt2 = torch.sqrt(torch.tensor(2., device=alpha.device))
+    xq = xp + sqrt2 * torch.cos(alpha / 2 + torch.pi / 4)
+    yq = yp + sqrt2 * torch.sin(alpha / 2 + torch.pi / 4)
+
+    # curve v
     xv = xu + torch.cos(alpha / 2)
     yv = yu + torch.sin(alpha / 2)
 
     # area sample
-    x_sample = torch.linspace(0, 1., n_area_samples, device=xp.device)
+    x_sample = torch.linspace(0., 1., n_area_samples, device=xp.device)
     center = xp[len(alpha) // 2]
     x_sample = center + x_sample * (1. - center)
 
@@ -88,7 +95,9 @@ def compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=2000, return_
     y_sample_lower = torch.clamp(y_sample_lower, min=0., max=1.)
 
     # upper edge
-    y_sample_upper = interp1d_multi_section(xv, yv, x_sample, outside_value=1., min_split_reduce=True)
+    y_sample_q = interp1d_multi_section(xq, yq, x_sample, outside_value=1., min_split_reduce=True)
+    y_sample_v = interp1d_multi_section(xv, yv, x_sample, outside_value=1., min_split_reduce=True)
+    y_sample_upper = torch.minimum(y_sample_q, y_sample_v)
     y_sample_upper = torch.clamp(y_sample_upper, min=0., max=1.)
 
     # area
