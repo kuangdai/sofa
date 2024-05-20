@@ -16,6 +16,8 @@ if __name__ == "__main__":
                         default=0.5, help="initial value of a")
     parser.add_argument("--b0", type=float,
                         default=0.6, help="initial value of b")
+    parser.add_argument("--xy-correction", action="store_true",
+                        help="whether to perform xy correction")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
     parser.add_argument("--n-alphas", type=int,
@@ -23,13 +25,13 @@ if __name__ == "__main__":
     parser.add_argument("--n-area-samples", type=int,
                         default=20000, help="number of x's for area calculation")
     parser.add_argument("--lr", type=float,
-                        default=0.0001, help="learning rate")
+                        default=1e-5, help="learning rate")
     parser.add_argument("--lr-decay-rate", type=float,
                         default=0.5, help="decay rate of lr")
     parser.add_argument("--lr-decay-step", type=int,
-                        default=1000, help="decay step of lr")
+                        default=300, help="decay step of lr")
     parser.add_argument("--epochs", type=int,
-                        default=10000, help="number of epochs")
+                        default=1000, help="number of epochs")
     parser.add_argument("--device", type=str,
                         default="cpu", help="training device")
     args = parser.parse_args()
@@ -38,7 +40,7 @@ if __name__ == "__main__":
     ab0 = torch.tensor((args.a0, args.b0))
 
     # model
-    model = SofaNetEllipse(ab0, hidden_sizes=args.hidden_sizes).to(args.device)
+    model = SofaNetEllipse(ab0, hidden_sizes=args.hidden_sizes, xy_correction=args.xy_correction).to(args.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, maximize=True)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 
