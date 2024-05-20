@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser.add_argument("--n-area-samples", type=int,
                         default=20000, help="number of x's for area calculation")
     parser.add_argument("--lr", type=float,
-                        default=1e-5, help="learning rate")
+                        default=1e-4, help="learning rate")
     parser.add_argument("--lr-decay-rate", type=float,
                         default=0.5, help="decay rate of lr")
     parser.add_argument("--lr-decay-step", type=int,
@@ -34,6 +34,8 @@ if __name__ == "__main__":
                         default=1000, help="number of epochs")
     parser.add_argument("--device", type=str,
                         default="cpu", help="training device")
+    parser.add_argument("--name", type=str,
+                        default="no_xy_correction", help="name for model saving")
     args = parser.parse_args()
 
     # a and b
@@ -56,7 +58,7 @@ if __name__ == "__main__":
         if area > largest_area:
             # checkpoint best
             largest_area = area.item()
-            torch.save(model.state_dict(), "outputs/best_model.pt")
+            torch.save(model.state_dict(), f"outputs/best_model_{args.name}.pt")
         optimizer.zero_grad()
         area.backward()
         optimizer.step()
@@ -65,7 +67,7 @@ if __name__ == "__main__":
 
     # eval
     if largest_area >= 0.:
-        model.load_state_dict(torch.load("outputs/best_model.pt"))
+        model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
     xp, yp, xp_prime, yp_prime = model.forward(alpha)
     area, outline = compute_area(alpha, xp, yp, xp_prime, yp_prime,
                                  n_area_samples=args.n_area_samples, return_outline=True)
@@ -73,4 +75,4 @@ if __name__ == "__main__":
     plt.figure(dpi=200)
     plt.plot(outline[0], outline[1])
     plt.plot(outline[0], outline[2])
-    plt.savefig("outputs/outline.png")
+    plt.savefig(f"outputs/outline_{args.name}.png")
