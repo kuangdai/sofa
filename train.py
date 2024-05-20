@@ -47,24 +47,23 @@ if __name__ == "__main__":
 
     # train
     largest_area = -1.
-    largest_state_dict = None
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
         xp, yp, xp_prime, yp_prime = model.forward(alpha)
         area = compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=args.n_area_samples)
         if area > largest_area:
             # checkpoint best
-            largest_state_dict = model.state_dict()
-            largest_area = area
+            largest_area = area.item()
+            torch.save(model.state_dict(), "outputs/best_model.pt")
         optimizer.zero_grad()
         area.backward()
         optimizer.step()
         scheduler.step()
-        progress_bar.set_postfix(area=f"{area.item():.4e}")
+        progress_bar.set_postfix(area=f"{area.item():.4e}", largest_area=f"{largest_area:.4e}")
 
     # eval
-    if largest_state_dict is not None:
-        model.load_state_dict(largest_state_dict)
+    if largest_area >= 0.:
+        model.load_state_dict(torch.load("outputs/best_model.pt"))
     xp, yp, xp_prime, yp_prime = model.forward(alpha)
     area, outline = compute_area(alpha, xp, yp, xp_prime, yp_prime,
                                  n_area_samples=args.n_area_samples, return_outline=True)
@@ -73,6 +72,3 @@ if __name__ == "__main__":
     plt.plot(outline[0], outline[1])
     plt.plot(outline[0], outline[2])
     plt.savefig("outputs/outline.png")
-
-    # save
-    torch.save(model.state_dict(), 'outputs/model_ellipse.pt')
