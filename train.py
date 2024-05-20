@@ -19,9 +19,9 @@ if __name__ == "__main__":
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
     parser.add_argument("--n-alphas", type=int,
-                        default=1001, help="number of alphas in [0, pi]")
+                        default=10001, help="number of alphas in [0, pi]")
     parser.add_argument("--n-area-samples", type=int,
-                        default=2000, help="number of x's for area calculation")
+                        default=20000, help="number of x's for area calculation")
     parser.add_argument("--lr", type=float,
                         default=0.0001, help="learning rate")
     parser.add_argument("--lr-decay-rate", type=float,
