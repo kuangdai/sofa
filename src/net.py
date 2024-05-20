@@ -14,7 +14,7 @@ class SofaNetEllipse(nn.Module):
         self.fcs[-1].weight.data[:] = 0.
         self.fcs[-1].bias.data[:] = torch.sqrt(ab0)
 
-    def forward(self, alpha):
+    def forward(self, alpha, returns_ab=False):
         n = len(alpha)
         assert n % 2 == 1 and torch.isclose(alpha[n // 2], torch.tensor(torch.pi / 2))
 
@@ -51,4 +51,7 @@ class SofaNetEllipse(nn.Module):
         yp = torch.cat((yp, yp[:-1].flip(dims=[0])))
         xp_prime = torch.cat((xp_prime, xp_prime[:-1].flip(dims=[0])))
         yp_prime = torch.cat((yp_prime, -yp_prime[:-1].flip(dims=[0])))
+
+        if returns_ab:
+            return xp, yp, xp_prime, yp_prime, a, b
         return xp, yp, xp_prime, yp_prime
