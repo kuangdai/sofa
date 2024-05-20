@@ -107,6 +107,6 @@ def compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=2000, return_
         return area
 
     # outline
-    lu_idx = torch.where(torch.greater(y_sample_upper, y_sample_lower))[0]
+    lu_idx = torch.where(torch.greater_equal(y_sample_upper, y_sample_lower))[0]
     outline = x_sample[lu_idx].detach(), y_sample_lower[lu_idx].detach(), y_sample_upper[lu_idx].detach()
     return area, outline
