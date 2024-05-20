@@ -70,8 +70,8 @@ if __name__ == "__main__":
                                  n_area_samples=args.n_area_samples, return_outline=True)
     print("Largest area found:", area.item())
     plt.figure(dpi=200)
-    plt.plot(outline, outline)
-    plt.plot(outline, outline)
+    plt.plot(outline[0], outline[1])
+    plt.plot(outline[0], outline[2])
     plt.savefig("outputs/outline.png")
 
     # save
