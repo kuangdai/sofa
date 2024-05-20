@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # model
     model = SofaNetEllipse(ab0, hidden_sizes=args.hidden_sizes).to(args.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, maximize=True)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 
     # alpha
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         xp, yp, xp_prime, yp_prime = model.forward(alpha)
         area = compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=args.n_area_samples)
         optimizer.zero_grad()
-        (-area).backward()
+        area.backward()
         optimizer.step()
         scheduler.step()
         progress_bar.set_postfix(area=f"{area.item():.4e}")
