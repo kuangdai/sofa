@@ -34,9 +34,8 @@ if __name__ == "__main__":
                         default=1000, help="number of epochs")
     parser.add_argument("--device", type=str,
                         default="cpu", help="training device")
-    parser.add_argument("--name", type=str,
-                        default="no_xy_correction", help="name for model saving")
     args = parser.parse_args()
+    name = "with_xy_correction" if args.xy_correction else "no_xy_correction"
 
     # a and b
     ab0 = torch.tensor((args.a0, args.b0))
@@ -58,7 +57,7 @@ if __name__ == "__main__":
         if area > largest_area:
             # checkpoint best
             largest_area = area.item()
-            torch.save(model.state_dict(), f"outputs/best_model_{args.name}.pt")
+            torch.save(model.state_dict(), f"outputs/best_model_{name}.pt")
         optimizer.zero_grad()
         area.backward()
         optimizer.step()
@@ -67,7 +66,7 @@ if __name__ == "__main__":
 
     # eval
     if largest_area >= 0.:
-        model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
+        model.load_state_dict(torch.load(f"outputs/best_model_{name}.pt"))
     xp, yp, xp_prime, yp_prime = model.forward(alpha)
     area, outline = compute_area(alpha, xp, yp, xp_prime, yp_prime,
                                  n_area_samples=args.n_area_samples, return_outline=True)
@@ -75,4 +74,4 @@ if __name__ == "__main__":
     plt.figure(dpi=200)
     plt.plot(outline[0], outline[1])
     plt.plot(outline[0], outline[2])
-    plt.savefig(f"outputs/outline_{args.name}.png")
+    plt.savefig(f"outputs/outline_{name}.png")
