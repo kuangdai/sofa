@@ -46,10 +46,16 @@ if __name__ == "__main__":
     alpha = torch.linspace(0, torch.pi, args.n_alphas).to(args.device)
 
     # train
+    largest_area = -1.
+    largest_state_dict = None
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
         xp, yp, xp_prime, yp_prime = model.forward(alpha)
         area = compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=args.n_area_samples)
+        if area > largest_area:
+            # checkpoint best
+            largest_state_dict = model.state_dict()
+            largest_area = area
         optimizer.zero_grad()
         area.backward()
         optimizer.step()
@@ -57,10 +63,12 @@ if __name__ == "__main__":
         progress_bar.set_postfix(area=f"{area.item():.4e}")
 
     # eval
+    if largest_state_dict is not None:
+        model.load_state_dict(largest_state_dict)
     xp, yp, xp_prime, yp_prime = model.forward(alpha)
     area, outline = compute_area(alpha, xp, yp, xp_prime, yp_prime,
                                  n_area_samples=args.n_area_samples, return_outline=True)
-    print("Maximized area:", area.item())
+    print("Largest area found:", area.item())
     plt.figure(dpi=200)
     plt.plot(outline, outline)
     plt.plot(outline, outline)
