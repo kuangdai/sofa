@@ -53,10 +53,10 @@ def interp1d_sorted(x0, y0, x1, fill_value):
 
 def interp1d_multi_section(x, y, x_target, min_split_reduce):
     if min_split_reduce:
-        fill_value = torch.finfo.max
+        fill_value = torch.finfo(x.dtype).max
         minmax_op = torch.min
     else:
-        fill_value = torch.finfo.min
+        fill_value = torch.finfo(x.dtype).min
         minmax_op = torch.max
     # split curve
     x_splits, y_splits = split_curve(x, y)
