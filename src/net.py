@@ -47,12 +47,14 @@ class SofaNetEllipse(nn.Module):
 
         # xy correction
         if self.xy_correction:
-            kxy = alpha[:, None]
-            for fc_kxy in self.fcs_kxy[:-1]:
-                kxy = torch.relu(fc_kxy(kxy))
+            kxy, sxy = alpha[:, None], alpha[:, None]
+            for fc_kxy, fc_sxy in zip(self.fcs_kxy[:-1], self.fcs_sxy[:-1]):
+                kxy = torch.tanh(fc_kxy(kxy))
+                sxy = torch.tanh(fc_sxy(sxy))
             kxy = self.fcs_kxy[-1](kxy)
-            xp = xp * kxy[:, 0]
-            yp = yp * kxy[:, 1]
+            sxy = self.fcs_sxy[-1](sxy)
+            xp = xp * kxy[:, 0] + sxy[:, 0]
+            yp = yp * kxy[:, 1] + sxy[:, 1]
 
         # gradient by zcs
         dummy = torch.ones_like(xp, requires_grad=True)
