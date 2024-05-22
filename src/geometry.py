@@ -122,7 +122,7 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
 
     # area sample
     x_sample = torch.linspace(0., 1., n_area_samples, device=xp.device)
-    x_min, x_max = -bound, bound
+    x_min, x_max = xp[-1] - 1., 1.
     x_sample = x_min + x_sample * (x_max - x_min)
 
     # lower edge
