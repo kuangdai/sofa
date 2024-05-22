@@ -51,67 +51,93 @@ def interp1d_sorted(x0, y0, x1, fill_value):
     return y1
 
 
-def interp1d_multi_section(x, y, x_target, min_split_reduce):
-    if min_split_reduce:
-        fill_value = torch.finfo(x.dtype).max
+def interp1d_multi_section(xs, ys, x_target, min_for_reduce):
+    # operator for section reduction
+    if min_for_reduce:
+        fill_value = torch.finfo(x_target.dtype).max
         minmax_op = torch.min
     else:
-        fill_value = torch.finfo(x.dtype).min
+        fill_value = torch.finfo(x_target.dtype).min
         minmax_op = torch.max
-    # split curve
-    x_splits, y_splits = split_curve(x, y)
-    # loop over splits
-    # TODO: this may be vectorised if we pad splits to same length; still, hard to implement
-    out = torch.empty((len(x_splits), len(x_target)), device=x_target.device)
-    for j, (x_split, y_split) in enumerate(zip(x_splits, y_splits)):
-        out[j] = interp1d_sorted(x_split, y_split, x_target, fill_value)
-    # reduce splits
-    out = minmax_op(out, dim=0)[0]
-    return out
+
+    # split input if it is one curve
+    if xs.ndim == 1:
+        xs, ys = split_curve(xs, ys)
+
+    # loop over sections
+    # TODO: this may be vectorised if we pad sections to same length; still, hard to implement
+    out = torch.empty((len(xs), len(x_target)), device=x_target.device)
+    for j, (x, y) in enumerate(zip(xs, ys)):
+        out[j] = interp1d_sorted(x, y, x_target, fill_value)
+
+    # section reduction
+    return minmax_op(out, dim=0)[0]
 
 
-def compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=2000, return_outline=False):
-    # curve u right
-    xu_r = xp - torch.sin(alpha) * xp_prime + (torch.cos(alpha) - 1) * yp_prime
-    yu_r = yp + (1 + torch.cos(alpha)) * xp_prime + torch.sin(alpha) * yp_prime
-    # handle the case where u is a point at zero, which may cause nan
-    zero = torch.zeros_like(xu_r)
-    if torch.isclose(xu_r, zero).all() and torch.isclose(yu_r, zero).all():
-        xu_r = zero
-        yu_r = zero
+def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
+                 bound=20., n_area_samples=2000, return_outline=False):
+    # constants
+    eps = torch.finfo(t.dtype).eps
+    extend = bound * 3.
+    sqrt2 = torch.sqrt(torch.tensor(2., device=t.device))
 
-    # curve u left
-    xu_l = xp + torch.sin(alpha) * xp_prime + (-torch.cos(alpha) - 1) * yp_prime
-    yu_l = yp + (1 - torch.cos(alpha)) * xp_prime - torch.sin(alpha) * yp_prime
-    if torch.isclose(xu_l, zero).all() and torch.isclose(yu_l, zero).all():
-        xu_l = zero
-        yu_l = zero
+    # geometry groups
+    gg = {}  # noqa
 
-    # curve v left
-    xv_r = xu_r + torch.cos(alpha / 2)
-    yv_r = yu_r + torch.sin(alpha / 2)
+    ##################
+    # vertical inner #
+    ##################
+    gg["x_lvi"] = torch.stack((xp, xp + torch.sin(alpha) * extend), dim=1)
+    gg["y_lvi"] = torch.stack((yp, yp - torch.cos(alpha) * extend), dim=1)
+    temp = (torch.cos(alpha) * dt_xp + torch.sin(alpha) * dt_yp) / (dt_alpha + eps)
+    gg["x_evi"] = xp - torch.sin(alpha) * temp
+    gg["y_evi"] = yp + torch.cos(alpha) * temp
 
-    # curve v right
-    xv_l = xu_l - torch.sin(alpha / 2)
-    yv_l = yu_l + torch.cos(alpha / 2)
+    ##################
+    # vertical outer #
+    ##################
+    xq = xp + sqrt2 * torch.cos(alpha + torch.pi / 4)
+    yq = yp + sqrt2 * torch.sin(alpha + torch.pi / 4)
+    gg["x_lvo"] = torch.stack((xq, xq + torch.sin(alpha) * extend), dim=1)
+    gg["y_lvo"] = torch.stack((yq, yq - torch.cos(alpha) * extend), dim=1)
+    gg["x_evo"] = gg["x_evi"] + torch.cos(alpha)
+    gg["y_evo"] = gg["y_evi"] + torch.sin(alpha)
+
+    ####################
+    # horizontal inner #
+    ####################
+    gg["x_lhi"] = torch.stack((xp, xp - torch.cos(alpha) * extend), dim=1)
+    gg["y_lhi"] = torch.stack((yp, yp - torch.sin(alpha) * extend), dim=1)
+    temp = (torch.sin(alpha) * dt_xp - torch.cos(alpha) * dt_yp) / (dt_alpha + eps)
+    gg["x_ehi"] = xp + torch.cos(alpha) * temp
+    gg["y_ehi"] = yp + torch.sin(alpha) * temp
+
+    ####################
+    # horizontal outer #
+    ####################
+    gg["x_lho"] = torch.stack((xq, xq - torch.cos(alpha) * extend), dim=1)
+    gg["y_lho"] = torch.stack((yq, yq - torch.sin(alpha) * extend), dim=1)
+    gg["x_eho"] = gg["x_ehi"] - torch.sin(alpha)
+    gg["y_eho"] = gg["y_ehi"] + torch.cos(alpha)
 
     # area sample
     x_sample = torch.linspace(0., 1., n_area_samples, device=xp.device)
-    x_min, x_max = xv_l.min(), xv_r.max()
+    x_min, x_max = -bound, bound
     x_sample = x_min + x_sample * (x_max - x_min)
 
     # lower edge
-    y_sample_p = interp1d_multi_section(xp, yp, x_sample, min_split_reduce=False)
-    y_sample_u_r = interp1d_multi_section(xu_r, yu_r, x_sample, min_split_reduce=False)
-    y_sample_u_l = interp1d_multi_section(xu_l, yu_l, x_sample, min_split_reduce=False)
-    y_sample_lower = torch.maximum(y_sample_p, torch.maximum(y_sample_u_r, y_sample_u_l))
-    y_sample_lower = torch.clamp(y_sample_lower, min=0., max=1.)
+    y_sample_lower = interp1d_multi_section(xp, yp, x_sample, min_for_reduce=False)
+    for key in {"lvi", "lhi", "evi", "ehi"}:
+        interp = interp1d_multi_section(gg[f"x_{key}"],
+                                        gg[f"y_{key}"], x_sample, min_for_reduce=False)
+        y_sample_lower = torch.maximum(y_sample_lower, interp)
 
     # upper edge
-    y_sample_v_r = interp1d_multi_section(xv_r, yv_r, x_sample, min_split_reduce=True)
-    y_sample_v_l = interp1d_multi_section(xv_l, yv_l, x_sample, min_split_reduce=True)
-    y_sample_upper = torch.minimum(y_sample_v_r, y_sample_v_l)
-    y_sample_upper = torch.clamp(y_sample_upper, min=0., max=1.)
+    y_sample_upper = interp1d_multi_section(xq, yq, x_sample, min_for_reduce=True)
+    for key in {"lvo", "lho", "evo", "eho"}:
+        interp = interp1d_multi_section(gg[f"x_{key}"],
+                                        gg[f"y_{key}"], x_sample, min_for_reduce=True)
+        y_sample_upper = torch.minimum(y_sample_upper, interp)
 
     # area
     height = torch.clamp(y_sample_upper - y_sample_lower, min=0., max=None)
