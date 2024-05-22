@@ -127,14 +127,14 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
 
     # lower edge
     y_sample_lower = interp1d_multi_section(xp, yp, x_sample, min_for_reduce=False)
-    for key in {"lvi", "lhi", "evi", "ehi"}:
+    for key in ["lvi", "lhi", "evi", "ehi"]:
         interp = interp1d_multi_section(gg[f"x_{key}"],
                                         gg[f"y_{key}"], x_sample, min_for_reduce=False)
         y_sample_lower = torch.maximum(y_sample_lower, interp)
 
     # upper edge
     y_sample_upper = interp1d_multi_section(xq, yq, x_sample, min_for_reduce=True)
-    for key in {"lvo", "lho", "evo", "eho"}:
+    for key in ["lvo", "lho", "evo", "eho"]:
         interp = interp1d_multi_section(gg[f"x_{key}"],
                                         gg[f"y_{key}"], x_sample, min_for_reduce=True)
         y_sample_upper = torch.minimum(y_sample_upper, interp)
