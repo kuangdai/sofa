@@ -27,7 +27,7 @@ def split_curve(x, y):
 
 def denominator(x):
     eps = torch.finfo(x.dtype).eps
-    return torch.where(torch.less(x.abs(), eps), eps * torch.sign(x), x)
+    return torch.where(torch.less(x.abs(), eps), eps, x)
 
 
 def interp1d_sorted(x0, y0, x1, fill_value):
