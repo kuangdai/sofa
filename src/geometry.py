@@ -25,6 +25,11 @@ def split_curve(x, y):
     return x_splits, y_splits
 
 
+def denominator(x):
+    eps = torch.finfo(x.dtype).eps
+    return torch.where(torch.less(x.abs(), eps), eps * torch.sign(x), x)
+
+
 def interp1d_sorted(x0, y0, x1, fill_value):
     assert len(x0) >= 2
 
@@ -41,7 +46,7 @@ def interp1d_sorted(x0, y0, x1, fill_value):
     xb, yb = x0[idx + 1], y0[idx + 1]
 
     # linear interpolation
-    k = (yb - ya) / (xb - xa)
+    k = (yb - ya) / denominator(xb - xa)
     y1 = ya + k * (x1 - xa)
 
     # mask those out of range
@@ -90,7 +95,7 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
     ##################
     gg["x_lvi"] = torch.stack((xp, xp + torch.sin(alpha) * extend), dim=1)
     gg["y_lvi"] = torch.stack((yp, yp - torch.cos(alpha) * extend), dim=1)
-    temp = (torch.cos(alpha) * dt_xp + torch.sin(alpha) * dt_yp) / (dt_alpha + eps)
+    temp = (torch.cos(alpha) * dt_xp + torch.sin(alpha) * dt_yp) / denominator(dt_alpha)
     gg["x_evi"] = xp - torch.sin(alpha) * temp
     gg["y_evi"] = yp + torch.cos(alpha) * temp
 
@@ -109,7 +114,7 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
     ####################
     gg["x_lhi"] = torch.stack((xp, xp - torch.cos(alpha) * extend), dim=1)
     gg["y_lhi"] = torch.stack((yp, yp - torch.sin(alpha) * extend), dim=1)
-    temp = (torch.sin(alpha) * dt_xp - torch.cos(alpha) * dt_yp) / (dt_alpha + eps)
+    temp = (torch.sin(alpha) * dt_xp - torch.cos(alpha) * dt_yp) / denominator(dt_alpha)
     gg["x_ehi"] = xp + torch.cos(alpha) * temp
     gg["y_ehi"] = yp + torch.sin(alpha) * temp
 
