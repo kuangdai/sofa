@@ -21,9 +21,9 @@ if __name__ == "__main__":
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
     parser.add_argument("--n-alphas", type=int,
-                        default=10001, help="number of alphas in [0, pi]")
+                        default=501, help="number of alphas in [0, pi]")
     parser.add_argument("--n-area-samples", type=int,
-                        default=20000, help="number of x's for area calculation")
+                        default=1000, help="number of x's for area calculation")
     parser.add_argument("--lr", type=float,
                         default=1e-4, help="learning rate")
     parser.add_argument("--lr-decay-rate", type=float,
@@ -46,14 +46,14 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 
     # alpha
-    alpha = torch.linspace(0, torch.pi, args.n_alphas).to(args.device)
+    t = torch.linspace(0, 1., args.n_alphas).to(args.device)
 
     # train
     largest_area = -1.
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
-        xp, yp, xp_prime, yp_prime = model.forward(alpha)
-        area = compute_area(alpha, xp, yp, xp_prime, yp_prime, n_area_samples=args.n_area_samples)
+        alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
+        area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp, n_area_samples=args.n_area_samples)
         if area > largest_area:
             # checkpoint best
             largest_area = area.item()
@@ -67,8 +67,8 @@ if __name__ == "__main__":
     # eval
     if largest_area >= 0.:
         model.load_state_dict(torch.load(f"outputs/best_model_{name}.pt"))
-    xp, yp, xp_prime, yp_prime = model.forward(alpha)
-    area, outline = compute_area(alpha, xp, yp, xp_prime, yp_prime,
+    alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
+    area, outline = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                                  n_area_samples=args.n_area_samples, return_outline=True)
     print("Largest area found:", area.item())
     plt.figure(dpi=200)
