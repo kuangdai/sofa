@@ -29,25 +29,28 @@ class SofaNetEllipse(nn.Module):
             self.fcs_sxy[-1].weight.data[:] = 0.
             self.fcs_sxy[-1].bias.data[:] = 0.
 
-    def forward(self, alpha):
+    def forward(self, t):
         # zcs
-        z = torch.tensor(0., requires_grad=True, device=alpha.device)
-        alpha = alpha + z
+        z = torch.tensor(0., requires_grad=True, device=t.device)
+        t = z + t
+
+        # alpha
+        alpha = t * torch.pi / 2.
 
         # layers
-        ab = alpha[:, None]
+        ab = 2 * alpha[:, None]
         for fc_ab in self.fcs_ab[:-1]:
             ab = torch.tanh(fc_ab(ab))
         ab = self.fcs_ab[-1](ab)
 
         # curve p by ellipse
         a, b = ab[:, 0], ab[:, 1]
-        xp = a * (torch.cos(alpha) - 1)
-        yp = b * torch.sin(alpha)
+        xp = a * (torch.cos(2 * alpha) - 1)
+        yp = b * torch.sin(2 * alpha)
 
         # xy correction
         if self.xy_correction:
-            kxy, sxy = alpha[:, None], alpha[:, None]
+            kxy, sxy = 2 * alpha[:, None], 2 * alpha[:, None]
             for fc_kxy, fc_sxy in zip(self.fcs_kxy[:-1], self.fcs_sxy[:-1]):
                 kxy = torch.tanh(fc_kxy(kxy))
                 sxy = torch.tanh(fc_sxy(sxy))
@@ -64,4 +67,4 @@ class SofaNetEllipse(nn.Module):
         omega_yp_z = torch.autograd.grad(omega_yp, z, create_graph=True)[0]
         xp_prime = torch.autograd.grad(omega_xp_z, dummy, create_graph=True)[0]
         yp_prime = torch.autograd.grad(omega_yp_z, dummy, create_graph=True)[0]
-        return xp, yp, xp_prime, yp_prime
+        return alpha, xp, yp, torch.ones_like(t) * torch.pi / 2., xp_prime, yp_prime
