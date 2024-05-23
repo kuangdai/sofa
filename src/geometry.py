@@ -83,7 +83,6 @@ def interp1d_multi_section(xs, ys, x_target, min_for_reduce):
 def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                  bound=20., n_area_samples=2000, return_outline=False):
     # constants
-    eps = torch.finfo(t.dtype).eps
     extend = bound * 3.
     sqrt2 = torch.sqrt(torch.tensor(2., device=t.device))
 
