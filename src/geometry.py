@@ -81,7 +81,7 @@ def interp1d_multi_section(xs, ys, x_target, min_for_reduce):
 
 
 def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                 bound=20., n_area_samples=2000, return_outline=False):
+                 bound=20., n_area_samples=2000, return_geometry=False):
     # constants
     extend = bound * 3.
     sqrt2 = torch.sqrt(torch.tensor(2., device=t.device))
@@ -147,10 +147,15 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
     # area
     height = torch.clamp(y_sample_upper - y_sample_lower, min=0., max=None)
     area = (height * (x_sample[1] - x_sample[0])).sum()
-    if not return_outline:
+    if not return_geometry:
         return area
 
-    # outline
-    lu_idx = torch.where(torch.greater_equal(y_sample_upper, y_sample_lower))[0]
-    outline = x_sample[lu_idx].detach(), y_sample_lower[lu_idx].detach(), y_sample_upper[lu_idx].detach()
-    return area, outline
+    # update geometry
+    gg |= {"t": t,
+           "alpha": alpha, "xp": xp, "yp": yp,
+           "dt_alpha": dt_alpha, "dt_xp": dt_xp, "dt_yp": dt_yp,
+           "xq": xq, "yq": yq,
+           "x_sample": x_sample,
+           "y_sample_lower": y_sample_lower,
+           "y_sample_upper": y_sample_upper}
+    return area, gg
