@@ -7,6 +7,7 @@ from src.geometry import compute_area
 from src.net import SofaNet
 
 torch.set_default_dtype(torch.float64)
+torch.use_deterministic_algorithms(True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Moving sofa",
@@ -23,19 +24,22 @@ if __name__ == "__main__":
                         default=0.6, help="b0 for path initialization")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128, 128], help="hidden sizes of model")
-    parser.add_argument("--lr", type=float,
+    parser.add_argument("-l", "--lr", type=float,
                         default=1e-4, help="learning rate")
     parser.add_argument("--lr-decay-rate", type=float,
                         default=0.5, help="decay rate of lr")
     parser.add_argument("--lr-decay-step", type=int,
                         default=300, help="decay step of lr")
-    parser.add_argument("--epochs", type=int,
+    parser.add_argument("-e", "--epochs", type=int,
                         default=1000, help="number of epochs")
     parser.add_argument("--device", type=str,
                         default="cpu", help="training device")
-    parser.add_argument("--name", type=str,
+    parser.add_argument("-n", "--name", type=str,
                         default="last", help="name of running")
+    parser.add_argument("-s", "--seed", type=int,
+                        default=0, help="random seed")
     args = parser.parse_args()
+    torch.manual_seed(args.seed)
 
     # model
     model = SofaNet(n_in=args.n_times, n_t=args.n_times, hidden_sizes=args.hidden_sizes,
