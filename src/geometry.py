@@ -134,6 +134,7 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
         interp = interp1d_multi_section(gg[f"x_{key}"],
                                         gg[f"y_{key}"], x_sample, min_for_reduce=False)
         y_sample_lower = torch.maximum(y_sample_lower, interp)
+    y_sample_lower = y_sample_lower.clamp(0., 1.)
 
     # upper edge
     y_sample_upper = interp1d_multi_section(xq, yq, x_sample, min_for_reduce=True)
@@ -141,6 +142,7 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
         interp = interp1d_multi_section(gg[f"x_{key}"],
                                         gg[f"y_{key}"], x_sample, min_for_reduce=True)
         y_sample_upper = torch.minimum(y_sample_upper, interp)
+    y_sample_upper = y_sample_upper.clamp(0., 1.)
 
     # area
     height = torch.clamp(y_sample_upper - y_sample_lower, min=0., max=None)
