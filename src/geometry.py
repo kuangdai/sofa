@@ -46,7 +46,7 @@ def interp1d_sorted(x0, y0, x1, fill_value):
     xb, yb = x0[idx + 1], y0[idx + 1]
 
     # linear interpolation
-    y1 = ya + (yb - ya) / (xb - xa) * (x1 - xa)
+    y1 = ya + (yb - ya) / denominator(xb - xa) * (x1 - xa)
     y1 = torch.where(torch.isnan(y1), fill_value, y1)
 
     # mask those out of range
