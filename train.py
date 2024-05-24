@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--device", type=str,
                         default="cpu", help="training device")
     parser.add_argument("-n", "--name", type=str,
-                        default="last", help="name of running")
+                        default="recent", help="name of running")
     parser.add_argument("-s", "--seed", type=int,
                         default=0, help="random seed")
     args = parser.parse_args()
@@ -63,11 +63,18 @@ if __name__ == "__main__":
         scheduler.step()
         progress_bar.set_postfix(area=f"{area.item():.4e}", largest_area=f"{largest_area:.4e}")
 
-    # eval
-    if largest_area >= 0.:
-        model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
+    # save
     t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
     area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                             n_areas=args.n_areas, return_geometry=True)
-    torch.save(gg, f"outputs/best_geometry_{args.name}.pt")
-    print("Largest area found:", area.item())
+    torch.save(model.state_dict(), f"outputs/last_model_{args.name}.pt")
+    torch.save(gg, f"outputs/last_geometry_{args.name}.pt")
+    print("Last area:", area.item())
+
+    if largest_area >= 0.:
+        model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
+        t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
+        area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
+                                n_areas=args.n_areas, return_geometry=True)
+        torch.save(gg, f"outputs/best_geometry_{args.name}.pt")
+        print("Best area:", area.item())
