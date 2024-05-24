@@ -48,7 +48,7 @@ if __name__ == "__main__":
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
         t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
-        area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp, n_area_samples=args.n_area_samples)
+        area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp, n_areas=args.n_areas)
         if area > largest_area:
             # checkpoint best
             largest_area = area.item()
@@ -64,6 +64,6 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
     t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
     area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                            n_area_samples=args.n_area_samples, return_geometry=True)
+                            n_areas=args.n_areas, return_geometry=True)
     torch.save(gg, f"outputs/best_geometry_{args.name}.pt")
     print("Largest area found:", area.item())

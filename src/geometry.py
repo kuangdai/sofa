@@ -79,7 +79,7 @@ def interp1d_multi_section(xs, ys, x_target, min_for_reduce):
 
 
 def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                 bound=20., n_area_samples=2000, return_geometry=False):
+                 bound=20., n_areas=2000, return_geometry=False):
     # constants
     extend = bound * 4.
     sqrt2 = torch.sqrt(torch.tensor(2., device=t.device))
@@ -124,7 +124,7 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
     gg["y_eho"] = gg["y_ehi"] + torch.cos(alpha)
 
     # area sample
-    x_sample = torch.linspace(0., 1., n_area_samples, device=xp.device)
+    x_sample = torch.linspace(0., 1., n_areas, device=xp.device)
     x_min, x_max = xp[-1] - 1., 1.
     x_sample = x_min + x_sample * (x_max - x_min)
 
