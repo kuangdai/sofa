@@ -7,7 +7,7 @@ class SofaNet(nn.Module):
         super().__init__()
         self.n_in, self.n_t = n_in, n_t
         self.velocity_mode = velocity_mode
-        n_out = n_t + 2 if velocity_mode else n_t
+        n_out = n_t if velocity_mode else n_t + 2
 
         # network
         self.fcs_alpha = nn.ModuleList()
@@ -20,13 +20,14 @@ class SofaNet(nn.Module):
             self.fcs_yp.append(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1]))
 
         # initialized to an elliptical path
-        d_alpha = 0 if velocity_mode else torch.pi / 2 / (n_t - 1)
-        alpha = torch.linspace(-d_alpha, torch.pi / 2 + d_alpha, n_out)
         if velocity_mode:
+            alpha = torch.linspace(0., torch.pi / 2, n_out)
             initial_alpha = torch.ones(n_t) * torch.pi / 2
             initial_xp = a0 * (-torch.sin(2 * alpha)) * torch.pi
             initial_yp = b0 * torch.cos(2 * alpha) * torch.pi
         else:
+            d_alpha = torch.pi / 2 / (n_t - 1)
+            alpha = torch.linspace(-d_alpha, torch.pi / 2 + d_alpha, n_out)
             initial_alpha = alpha
             initial_xp = a0 * (torch.cos(2 * alpha) - 1)
             initial_yp = b0 * torch.sin(2 * alpha)
