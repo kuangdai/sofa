@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("--b0", type=float,
                         default=0.6, help="b0 for path initialization")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
-                        default=[128, 128, 128, 128], help="hidden sizes of model")
+                        default=[128, 128, 128], help="hidden sizes of model")
     parser.add_argument("-l", "--lr", type=float,
                         default=1e-4, help="learning rate")
     parser.add_argument("--lr-decay-rate", type=float,
