@@ -51,7 +51,7 @@ class SofaNet(nn.Module):
         x_xp = self.fcs_xp[-1](x_xp)
         x_yp = self.fcs_yp[-1](x_yp)
 
-        t = torch.linspace(0., 1., device=device)
+        t = torch.linspace(0., 1., self.n_t, device=device)
         if self.velocity_mode:
             # integration
             dt_alpha, dt_xp, dt_yp = x_alpha, x_xp, x_yp
