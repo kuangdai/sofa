@@ -32,7 +32,7 @@ if __name__ == "__main__":
                         default=300, help="decay step of lr")
     parser.add_argument("-e", "--epochs", type=int,
                         default=1000, help="number of epochs")
-    parser.add_argument("--device", type=str,
+    parser.add_argument("-d", "--device", type=str,
                         default="cpu", help="training device")
     parser.add_argument("-n", "--name", type=str,
                         default="last", help="name of running")
