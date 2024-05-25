@@ -14,7 +14,7 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-v", "--velocity-mode", action="store_true",
                         help="velocity mode")
-    parser.add_argument("-e", "--envelope", action="store_true",
+    parser.add_argument("-E", "--envelope", action="store_true",
                         help="consider envelope when computing area")
     parser.add_argument("-t", "--n-times", type=int,
                         default=1000, help="number of times")
