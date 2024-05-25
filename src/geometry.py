@@ -1,6 +1,11 @@
 import torch
 
 
+def denominator(x):
+    eps = torch.finfo(x.dtype).eps
+    return torch.where(torch.less(x.abs(), eps), eps, x)
+
+
 def split_curve(x, y):
     assert len(x) >= 3
 
@@ -23,11 +28,6 @@ def split_curve(x, y):
         x_splits[i] = torch.cat((x_splits[i], x_splits[i + 1][:1]))
         y_splits[i] = torch.cat((y_splits[i], y_splits[i + 1][:1]))
     return x_splits, y_splits
-
-
-def denominator(x):
-    eps = torch.finfo(x.dtype).eps
-    return torch.where(torch.less(x.abs(), eps), eps, x)
 
 
 def interp1d_sorted(x0, y0, x1, fill_value):
@@ -55,18 +55,22 @@ def interp1d_sorted(x0, y0, x1, fill_value):
     return y1
 
 
-def interp1d_multi_section(xs, ys, x_target, min_for_reduce):
-    # operator for section reduction
+def reduce_fill_op(x, min_for_reduce):
     if min_for_reduce:
-        fill_value = torch.finfo(x_target.dtype).max
+        fill_value = torch.finfo(x.dtype).max
         minmax_op = torch.min
     else:
-        fill_value = torch.finfo(x_target.dtype).min
+        fill_value = torch.finfo(x.dtype).min
         minmax_op = torch.max
+    return fill_value, minmax_op
 
-    # split input if it is one curve
-    if xs.ndim == 1:
-        xs, ys = split_curve(xs, ys)
+
+def interp1d_multi_section_curve(xs, ys, x_target, min_for_reduce):
+    # operator for reduction
+    fill_value, minmax_op = reduce_fill_op(x_target, min_for_reduce)
+
+    # split input
+    xs, ys = split_curve(xs, ys)
 
     # loop over sections
     # TODO: this may be vectorised if we pad sections to same length; still, hard to implement
@@ -74,12 +78,29 @@ def interp1d_multi_section(xs, ys, x_target, min_for_reduce):
     for j, (x, y) in enumerate(zip(xs, ys)):
         out[j] = interp1d_sorted(x, y, x_target, fill_value)
 
-    # section reduction
+    # reduction
     return minmax_op(out, dim=0)[0]
 
 
+def interp1d_multi_lines(xs, ys, x_target, min_for_reduce):
+    # operator for reduction
+    fill_value, minmax_op = reduce_fill_op(x_target, min_for_reduce)
+
+    # linear interpolation
+    k = (ys[:, 1] - ys[:, 0]) / denominator(xs[:, 1] - xs[:, 0])
+    y_target = ys[:, 0, None] + k[:, None] * (x_target[None, :] - xs[:, 1, None])
+
+    # out of range
+    out_of_range = torch.logical_or(torch.greater(x_target[None, :], xs[:, 1, None]),
+                                    torch.less(x_target[None, :], xs[:, 0, None]))
+    y_target = torch.where(out_of_range, fill_value, y_target)
+
+    # reduction
+    return minmax_op(y_target, dim=0)[0]
+
+
 def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                 bound=20., n_areas=2000, return_geometry=False):
+                 bound=20., n_areas=2000, envelope=False, return_geometry=False):
     # constants
     extend = bound * 4.
     sqrt2 = torch.sqrt(torch.tensor(2., device=t.device))
@@ -129,19 +150,25 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
     x_sample = x_min + x_sample * (x_max - x_min)
 
     # lower edge
-    y_sample_lower = interp1d_multi_section(xp, yp, x_sample, min_for_reduce=False)
-    for key in ["lvi", "lhi", "evi", "ehi"]:
-        interp = interp1d_multi_section(gg[f"x_{key}"],
-                                        gg[f"y_{key}"], x_sample, min_for_reduce=False)
+    y_sample_lower = interp1d_multi_section_curve(xp, yp, x_sample, min_for_reduce=False)
+    for key in ["lvi", "lhi"]:
+        interp = interp1d_multi_lines(gg[f"x_{key}"], gg[f"y_{key}"], x_sample, min_for_reduce=False)
         y_sample_lower = torch.maximum(y_sample_lower, interp)
+    if envelope:
+        for key in ["evi", "ehi"]:
+            interp = interp1d_multi_section_curve(gg[f"x_{key}"], gg[f"y_{key}"], x_sample, min_for_reduce=False)
+            y_sample_lower = torch.maximum(y_sample_lower, interp)
     y_sample_lower = y_sample_lower.clamp(0., 1.)
 
     # upper edge
-    y_sample_upper = interp1d_multi_section(xq, yq, x_sample, min_for_reduce=True)
-    for key in ["lvo", "lho", "evo", "eho"]:
-        interp = interp1d_multi_section(gg[f"x_{key}"],
-                                        gg[f"y_{key}"], x_sample, min_for_reduce=True)
+    y_sample_upper = interp1d_multi_section_curve(xq, yq, x_sample, min_for_reduce=True)
+    for key in ["lvo", "lho"]:
+        interp = interp1d_multi_lines(gg[f"x_{key}"], gg[f"y_{key}"], x_sample, min_for_reduce=True)
         y_sample_upper = torch.minimum(y_sample_upper, interp)
+    if envelope:
+        for key in ["evo", "eho"]:
+            interp = interp1d_multi_section_curve(gg[f"x_{key}"], gg[f"y_{key}"], x_sample, min_for_reduce=True)
+            y_sample_upper = torch.minimum(y_sample_upper, interp)
     y_sample_upper = y_sample_upper.clamp(0., 1.)
 
     # area
