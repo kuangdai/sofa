@@ -14,6 +14,8 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-v", "--velocity-mode", action="store_true",
                         help="velocity mode")
+    parser.add_argument("-e", "--envelope", action="store_true",
+                        help="consider envelope when computing area")
     parser.add_argument("-t", "--n-times", type=int,
                         default=1000, help="number of times")
     parser.add_argument("-a", "--n-areas", type=int,
@@ -52,7 +54,7 @@ if __name__ == "__main__":
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
         t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
-        area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp, n_areas=args.n_areas)
+        area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp, n_areas=args.n_areas, envelope=args.envelope)
         if area > largest_area:
             # checkpoint best
             largest_area = area.item()
@@ -66,7 +68,7 @@ if __name__ == "__main__":
     # save
     t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
     area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                            n_areas=args.n_areas, return_geometry=True)
+                            n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
     torch.save(model.state_dict(), f"outputs/last_model_{args.name}.pt")
     torch.save(gg, f"outputs/last_geometry_{args.name}.pt")
     print("Last area:", area.item())
