@@ -92,8 +92,8 @@ def interp1d_multi_lines(xs, ys, x_target, min_for_reduce):
     y_target = ys[:, 0, None] + k[:, None] * (x_target[None, :] - xs[:, 0, None])
 
     # out of range
-    out_of_range = torch.logical_or(torch.greater(x_target[None, :], xs[:, 1, None]),
-                                    torch.less(x_target[None, :], xs[:, 0, None]))
+    out_of_range = torch.logical_or(torch.greater(x_target[None, :], xs[:, :, None].max(dim=1)[0]),
+                                    torch.less(x_target[None, :], xs[:, :, None].min(dim=1)[0]))
     y_target = torch.where(out_of_range, fill_value, y_target)
 
     # reduction
