@@ -88,7 +88,7 @@ def interp1d_multi_lines(xs, ys, x_target, min_for_reduce):
 
     # linear interpolation
     k = (ys[:, 1] - ys[:, 0]) / denominator(xs[:, 1] - xs[:, 0])
-    y_target = ys[:, 0, None] + k[:, None] * (x_target[None, :] - xs[:, 1, None])
+    y_target = ys[:, 0, None] + k[:, None] * (x_target[None, :] - xs[:, 0, None])
 
     # out of range
     out_of_range = torch.logical_or(torch.greater(x_target[None, :], xs[:, 1, None]),
