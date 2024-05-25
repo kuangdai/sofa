@@ -70,7 +70,8 @@ def interp1d_multi_section_curve(xs, ys, x_target, min_for_reduce):
     fill_value, minmax_op = reduce_fill_op(x_target, min_for_reduce)
 
     # split input
-    xs, ys = split_curve(xs, ys)
+    if xs.ndim == 1:
+        xs, ys = split_curve(xs, ys)
 
     # loop over sections
     # TODO: this may be vectorised if we pad sections to same length; still, hard to implement
