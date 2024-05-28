@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("--beta", type=float,
                         default=0.7, help="minimum rotation angle relative to pi / 2")
     parser.add_argument("--beta-factor", type=float,
-                        default=1.0, help="factor for beta constraint")
+                        default=1.0, help="factor for beta inequality loss")
     parser.add_argument("-E", "--envelope", action="store_true",
                         help="consider envelope when computing area")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
@@ -44,7 +44,8 @@ if __name__ == "__main__":
     # model
     model = SofaNet(hidden_sizes=args.hidden_sizes).to(args.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 
     # time
     t = torch.linspace(0., 1., args.n_times)
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     for epoch in progress_bar:
         alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
         area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                            n_areas=args.n_areas, envelope=args.envelope)
+                            n_areas=args.n_areas, envelope=args.envelope, return_geometry=False)
         loss = -area + args.beta_factor * torch.relu(torch.pi / 2 * args.beta - alpha[-1])
         if area > largest_area:
             # checkpoint best
@@ -79,6 +80,6 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
         alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
         area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                                n_areas=args.n_areas, return_geometry=True)
+                                n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
         torch.save(gg, f"outputs/best_geometry_{args.name}.pt")
         print("Best area:", area.item())
