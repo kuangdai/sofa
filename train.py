@@ -4,7 +4,7 @@ import torch
 from tqdm import trange
 
 from src.geometry import compute_area
-from src.net import SofaNet
+from src.network import SofaNet
 
 torch.set_default_dtype(torch.float64)
 torch.use_deterministic_algorithms(True)
@@ -12,18 +12,16 @@ torch.use_deterministic_algorithms(True)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Moving sofa",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-v", "--velocity-mode", action="store_true",
-                        help="velocity mode")
-    parser.add_argument("-E", "--envelope", action="store_true",
-                        help="consider envelope when computing area")
     parser.add_argument("-t", "--n-times", type=int,
                         default=1000, help="number of times")
     parser.add_argument("-a", "--n-areas", type=int,
                         default=2000, help="number of x's for area integration")
-    parser.add_argument("--a0", type=float,
-                        default=0.5, help="a0 for path initialization")
-    parser.add_argument("--b0", type=float,
-                        default=0.6, help="b0 for path initialization")
+    parser.add_argument("--beta", type=float,
+                        default=0.7, help="minimum rotation angle relative to pi / 2")
+    parser.add_argument("--beta-factor", type=float,
+                        default=1.0, help="factor for beta constraint")
+    parser.add_argument("-E", "--envelope", action="store_true",
+                        help="consider envelope when computing area")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
     parser.add_argument("-l", "--lr", type=float,
@@ -44,29 +42,33 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     # model
-    model = SofaNet(n_in=args.n_times, n_t=args.n_times, hidden_sizes=args.hidden_sizes,
-                    a0=args.a0, b0=args.b0, velocity_mode=args.velocity_mode).to(args.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, maximize=True)
+    model = SofaNet(hidden_sizes=args.hidden_sizes).to(args.device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
+
+    # time
+    t = torch.linspace(0., 1., args.n_times)
 
     # train
     largest_area = -1.
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
-        t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
-        area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp, n_areas=args.n_areas, envelope=args.envelope)
+        alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
+        area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
+                            n_areas=args.n_areas, envelope=args.envelope)
+        loss = -area + args.beta_factor * torch.relu(torch.pi / 2 * args.beta - alpha[-1])
         if area > largest_area:
             # checkpoint best
             largest_area = area.item()
             torch.save(model.state_dict(), f"outputs/best_model_{args.name}.pt")
         optimizer.zero_grad()
-        area.backward()
+        loss.backward()
         optimizer.step()
         scheduler.step()
         progress_bar.set_postfix(area=f"{area.item():.4e}", largest_area=f"{largest_area:.4e}")
 
     # save
-    t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
+    alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
     area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                             n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
     torch.save(model.state_dict(), f"outputs/last_model_{args.name}.pt")
@@ -75,7 +77,7 @@ if __name__ == "__main__":
 
     if largest_area >= 0.:
         model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
-        t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward()
+        alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
         area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                                 n_areas=args.n_areas, return_geometry=True)
         torch.save(gg, f"outputs/best_geometry_{args.name}.pt")
