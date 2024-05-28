@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("--beta-deg", type=float,
                         default=81.0, help="minimum rotation angle in degree")
     parser.add_argument("--beta-factor", type=float,
-                        default=1.0, help="factor for beta inequality loss")
+                        default=5.0, help="factor for beta inequality loss")
     parser.add_argument("-E", "--envelope", action="store_true",
                         help="consider envelope when computing area")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
@@ -51,13 +51,14 @@ if __name__ == "__main__":
     t = torch.linspace(0., 1., args.n_times)
 
     # train
+    beta = torch.deg2rad(torch.tensor(args.beta_deg, device=args.device))
     largest_area = -1.
     progress_bar = trange(args.epochs)
     for epoch in progress_bar:
         alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
         area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                             n_areas=args.n_areas, envelope=args.envelope, return_geometry=False)
-        loss = -area + args.beta_factor * torch.relu(torch.deg2rad(args.beta_deg) - alpha[-1])
+        loss = -area + args.beta_factor * torch.relu(beta - alpha[-1])
         if area > largest_area:
             # checkpoint best
             largest_area = area.item()
