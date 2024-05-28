@@ -48,7 +48,7 @@ if __name__ == "__main__":
         optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 
     # time
-    t = torch.linspace(0., 1., args.n_times)
+    t = torch.linspace(0., 1., args.n_times, device=args.device)
 
     # train
     beta = torch.deg2rad(torch.tensor(args.beta_deg, device=args.device))
