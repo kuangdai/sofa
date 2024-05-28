@@ -29,9 +29,9 @@ if __name__ == "__main__":
     parser.add_argument("--lr-decay-rate", type=float,
                         default=1., help="decay rate of lr")
     parser.add_argument("--lr-decay-step", type=int,
-                        default=500, help="decay step of lr")
+                        default=1000, help="decay step of lr")
     parser.add_argument("-e", "--epochs", type=int,
-                        default=1000, help="number of epochs")
+                        default=3000, help="number of epochs")
     parser.add_argument("-d", "--device", type=str,
                         default="cpu", help="training device")
     parser.add_argument("-n", "--name", type=str,
