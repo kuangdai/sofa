@@ -71,16 +71,16 @@ if __name__ == "__main__":
 
     # save
     alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
-    area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                            n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
+    gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
+                      n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
     torch.save(model.state_dict(), f"outputs/last_model_{args.name}.pt")
     torch.save(gg, f"outputs/last_geometry_{args.name}.pt")
-    print("Last area:", area.item())
+    print("Last area:", gg["area"].item())
 
     if largest_area >= 0.:
         model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
         alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
-        area, gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
-                                n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
+        gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
+                          n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
         torch.save(gg, f"outputs/best_geometry_{args.name}.pt")
-        print("Best area:", area.item())
+        print("Best area:", gg["area"].item())
