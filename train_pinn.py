@@ -10,7 +10,7 @@ torch.set_default_dtype(torch.float64)
 torch.use_deterministic_algorithms(True)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Moving sofa",
+    parser = argparse.ArgumentParser("Moving sofa with a PINN",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-t", "--n-times", type=int,
                         default=1000, help="number of times")
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr-decay-step", type=int,
                         default=1000, help="decay step of lr")
     parser.add_argument("-e", "--epochs", type=int,
-                        default=3000, help="number of epochs")
+                        default=5000, help="number of epochs")
     parser.add_argument("-d", "--device", type=str,
                         default="cpu", help="training device")
     parser.add_argument("-n", "--name", type=str,
