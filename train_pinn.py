@@ -14,7 +14,7 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-t", "--n-times", type=int,
                         default=1000, help="number of times")
-    parser.add_argument("-a", "--n-areas", type=int,
+    parser.add_argument("-n", "--n-areas", type=int,
                         default=2000, help="number of x's for area integration")
     parser.add_argument("--beta-deg", type=float,
                         default=81.0, help="minimum rotation angle in degree")
@@ -34,7 +34,7 @@ if __name__ == "__main__":
                         default=5000, help="number of epochs")
     parser.add_argument("-d", "--device", type=str,
                         default="cpu", help="training device")
-    parser.add_argument("-n", "--name", type=str,
+    parser.add_argument("-N", "--name", type=str,
                         default="recent", help="name of running")
     parser.add_argument("-s", "--seed", type=int,
                         default=0, help="random seed")
