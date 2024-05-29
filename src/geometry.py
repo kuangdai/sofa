@@ -185,5 +185,6 @@ def compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
            "xq": xq, "yq": yq,
            "x_sample": x_sample,
            "y_sample_lower": y_sample_lower,
-           "y_sample_upper": y_sample_upper}
-    return area, gg
+           "y_sample_upper": y_sample_upper,
+           "area": area}
+    return gg
