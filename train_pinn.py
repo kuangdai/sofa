@@ -3,8 +3,8 @@ import argparse
 import torch
 from tqdm import trange
 
-from src.geometry import compute_area
-from src.network import SofaNet
+from pinn.geometry import compute_area
+from pinn.network import SofaNet
 
 torch.set_default_dtype(torch.float64)
 torch.use_deterministic_algorithms(True)
