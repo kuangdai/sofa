@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--lr", type=float,
                         default=1e-4, help="learning rate")
     parser.add_argument("--lr-decay-rate", type=float,
-                        default=1., help="decay rate of lr")
+                        default=0.5, help="decay rate of lr")
     parser.add_argument("--lr-decay-step", type=int,
                         default=1000, help="decay step of lr")
     parser.add_argument("-e", "--epochs", type=int,
