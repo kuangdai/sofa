@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 import torch
 from tqdm import trange
@@ -50,6 +51,10 @@ if __name__ == "__main__":
     # time
     t = torch.linspace(0., 1., args.n_times, device=args.device)
 
+    # path
+    out_dir = Path(f"outputs/pinn/{args.name}")
+    out_dir.mkdir(exist_ok=True, parents=True)
+
     # train
     beta = torch.deg2rad(torch.tensor(args.beta_deg, device=args.device))
     largest_area = -1.
@@ -62,7 +67,7 @@ if __name__ == "__main__":
         if area > largest_area:
             # checkpoint best
             largest_area = area.item()
-            torch.save(model.state_dict(), f"outputs/best_model_{args.name}.pt")
+            torch.save(model.state_dict(), f"{out_dir}/best_model.pt")
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -73,14 +78,14 @@ if __name__ == "__main__":
     alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
     gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                       n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
-    torch.save(model.state_dict(), f"outputs/last_model_{args.name}.pt")
-    torch.save(gg, f"outputs/last_geometry_{args.name}.pt")
+    torch.save(model.state_dict(), f"{out_dir}/last_model.pt")
+    torch.save(gg, f"{out_dir}/last_geometry.pt")
     print("Last area:", gg["area"].item())
 
     if largest_area >= 0.:
-        model.load_state_dict(torch.load(f"outputs/best_model_{args.name}.pt"))
+        model.load_state_dict(torch.load(f"{out_dir}/best_model.pt"))
         alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
         gg = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                           n_areas=args.n_areas, envelope=args.envelope, return_geometry=True)
-        torch.save(gg, f"outputs/best_geometry_{args.name}.pt")
+        torch.save(gg, f"{out_dir}/best_geometry.pt")
         print("Best area:", gg["area"].item())
