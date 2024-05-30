@@ -15,10 +15,10 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-a", "--alphas", type=float, nargs="+",
                         default=[
-                            0.283794109,  # asin(7/25),
-                            0.532504098,  # asin(33/65),
-                            0.781214087,  # asin(119/169),
-                            1.03829223,  # asin(56/65),
+                            0.283794109,  # asin(7/25)
+                            0.532504098,  # asin(33/65)
+                            0.781214087,  # asin(119/169)
+                            1.03829223,  # asin(56/65)
                             1.28700222,  # asin(24/25)
                         ], help="alphas")
     parser.add_argument("-b", "--beta1", type=float,
