@@ -17,6 +17,6 @@ class SofaNet(nn.Module):
         for fc_u1, fc_u2 in zip(self.fcs_u1[:-1], self.fcs_u2[:-1]):
             u1 = torch.relu(fc_u1(u1))
             u2 = torch.relu(fc_u2(u2))
-        u1 = self.fcs_u1[-1](u1).squeeze(1) * alpha
-        u2 = self.fcs_u2[-1](u2).squeeze(1) * alpha
+        u1 = self.fcs_u1[-1](u1).squeeze(1)
+        u2 = self.fcs_u2[-1](u2).squeeze(1)
         return u1, u2
