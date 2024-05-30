@@ -23,8 +23,8 @@ def compute_area(alpha, beta1, beta2, u1, u2,
     gg["y_lvi"] = torch.stack((yp, yp - torch.cos(alpha) * extend), dim=1)
     beta = torch.tensor((beta1, beta2), device=alpha.device)
     zero2 = torch.zeros(2, device=alpha.device)
-    gg["x_bvi"] = torch.stack((zero2, torch.sin(beta) * extend), dim=1)
-    gg["y_bvi"] = torch.stack((zero2, -torch.cos(beta) * extend), dim=1)
+    gg["x_bvi"] = torch.stack((-torch.sin(beta) * extend, torch.sin(beta) * extend), dim=1)
+    gg["y_bvi"] = torch.stack((torch.cos(beta) * extend, -torch.cos(beta) * extend), dim=1)
 
     ##################
     # vertical outer #
@@ -33,8 +33,10 @@ def compute_area(alpha, beta1, beta2, u1, u2,
     yq = yp + sqrt2 * torch.sin(alpha + torch.pi / 4)
     gg["x_lvo"] = torch.stack((xq, xq + torch.sin(alpha) * extend), dim=1)
     gg["y_lvo"] = torch.stack((yq, yq - torch.cos(alpha) * extend), dim=1)
-    gg["x_bvo"] = torch.stack((torch.cos(beta), torch.cos(beta) + torch.sin(beta) * extend), dim=1)
-    gg["y_bvo"] = torch.stack((torch.sin(beta), torch.sin(beta) - torch.cos(beta) * extend), dim=1)
+    gg["x_bvo"] = torch.stack((torch.cos(beta) - torch.sin(beta) * extend,
+                               torch.cos(beta) + torch.sin(beta) * extend), dim=1)
+    gg["y_bvo"] = torch.stack((torch.sin(beta) + torch.cos(beta) * extend,
+                               torch.sin(beta) - torch.cos(beta) * extend), dim=1)
 
     ####################
     # horizontal inner #
