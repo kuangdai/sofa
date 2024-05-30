@@ -22,7 +22,6 @@ def compute_area(alpha, beta1, beta2, u1, u2,
     gg["x_lvi"] = torch.stack((xp, xp + torch.sin(alpha) * extend), dim=1)
     gg["y_lvi"] = torch.stack((yp, yp - torch.cos(alpha) * extend), dim=1)
     beta = torch.tensor((beta1, beta2), device=alpha.device)
-    zero2 = torch.zeros(2, device=alpha.device)
     gg["x_bvi"] = torch.stack((-torch.sin(beta) * extend, torch.sin(beta) * extend), dim=1)
     gg["y_bvi"] = torch.stack((torch.cos(beta) * extend, -torch.cos(beta) * extend), dim=1)
 
@@ -52,7 +51,7 @@ def compute_area(alpha, beta1, beta2, u1, u2,
 
     # area sample
     x_sample = torch.linspace(0., 1., n_areas, device=xp.device)
-    x_min, x_max = xp[-1] - 1., 1.
+    x_min, x_max = -5., 1.
     x_sample = x_min + x_sample * (x_max - x_min)
 
     # lower edge
