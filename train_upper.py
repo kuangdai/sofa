@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("-B", "--beta2", type=float,
                         default=torch.pi / 2, help="beta2")
     parser.add_argument("-n", "--n-areas", type=int,
-                        default=2000, help="number of x's for area integration")
+                        default=10000, help="number of x's for area integration")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
     parser.add_argument("-l", "--lr", type=float,
