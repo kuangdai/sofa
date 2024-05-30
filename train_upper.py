@@ -65,7 +65,7 @@ if __name__ == "__main__":
         beta2 = torch.tensor(args.beta2, device=args.device)
 
     # path
-    out_dir = Path(f"outputs/upper_small/{args.name}")
+    out_dir = Path(f"outputs/upper/{args.name}")
     out_dir.mkdir(exist_ok=True, parents=True)
 
     # train
