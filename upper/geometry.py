@@ -58,14 +58,14 @@ def compute_area(alpha, beta1, beta2, u1, u2,
     # lower edge
     interp_lvi = interp1d_multi_lines(gg[f"x_lvi"], gg[f"y_lvi"], x_sample, min_for_reduce=False)
     interp_lhi = interp1d_multi_lines(gg[f"x_lhi"], gg[f"y_lhi"], x_sample, min_for_reduce=False)
-    interp_bvi = interp1d_multi_lines(gg[f"x_bvi"], gg[f"y_bvi"], x_sample, min_for_reduce=False)
+    interp_bvi = interp1d_multi_lines(gg[f"x_bvi"], gg[f"y_bvi"], x_sample, min_for_reduce=True)
     y_sample_lower = torch.maximum(torch.maximum(interp_lvi, interp_lhi), interp_bvi)
     y_sample_lower = y_sample_lower.clamp(0., 1.)
 
     # upper edge
     interp_lvo = interp1d_multi_lines(gg[f"x_lvo"], gg[f"y_lvo"], x_sample, min_for_reduce=True)
     interp_lho = interp1d_multi_lines(gg[f"x_lho"], gg[f"y_lho"], x_sample, min_for_reduce=True)
-    interp_bvo = interp1d_multi_lines(gg[f"x_bvo"], gg[f"y_bvo"], x_sample, min_for_reduce=True)
+    interp_bvo = interp1d_multi_lines(gg[f"x_bvo"], gg[f"y_bvo"], x_sample, min_for_reduce=False)
     y_sample_upper = torch.minimum(torch.minimum(interp_lvo, interp_lho), interp_bvo)
     y_sample_upper = y_sample_upper.clamp(0., 1.)
 
