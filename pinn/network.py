@@ -23,9 +23,12 @@ class SofaNet(nn.Module):
             alpha = torch.relu(fc_alpha(alpha))
             xp = torch.relu(fc_xp(xp))
             yp = torch.relu(fc_yp(yp))
-        alpha = (self.fcs_alpha[-1](alpha) * t).squeeze(1)  # `* t` for alpha(0) = 0
-        xp = (self.fcs_xp[-1](xp) * t).squeeze(1)
-        yp = (self.fcs_yp[-1](yp) * t).squeeze(1)
+        alpha = self.fcs_alpha[-1](alpha).squeeze(1)
+        xp = self.fcs_xp[-1](xp).squeeze(1)
+        yp = self.fcs_yp[-1](yp).squeeze(1)
+        alpha = alpha - alpha[0]  # alpha(0) = 0
+        xp = xp - xp[0]
+        yp = yp - yp[0]
 
         # derivatives
         dummy = torch.ones_like(alpha, requires_grad=True, device=t.device)
