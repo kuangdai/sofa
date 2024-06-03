@@ -25,6 +25,8 @@ if __name__ == "__main__":
                         help="consider envelope when computing area")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
+    parser.add_argument("--scaling", type=float, nargs=3,
+                        default=[1., 1., 1.], help="scaling network outputs for alpha, xp, yp")
     parser.add_argument("-l", "--lr", type=float,
                         default=1e-4, help="learning rate")
     parser.add_argument("--lr-decay-rate", type=float,
@@ -43,7 +45,10 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     # model
-    model = SofaNet(hidden_sizes=args.hidden_sizes).to(args.device)
+    model = SofaNet(hidden_sizes=args.hidden_sizes,
+                    alpha_scaling=args.scaling[0],
+                    xp_scaling=args.scaling[1],
+                    yp_scaling=args.scaling[2]).to(args.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
