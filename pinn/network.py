@@ -3,8 +3,10 @@ import torch.nn as nn
 
 
 class SofaNet(nn.Module):
-    def __init__(self, hidden_sizes):
+    def __init__(self, hidden_sizes=None, alpha_scaling=1., xp_scaling=1., yp_scaling=1.):
         super().__init__()
+        if hidden_sizes is None:
+            hidden_sizes = [128, 128, 128]
         self.fcs_alpha = nn.ModuleList()
         self.fcs_xp = nn.ModuleList()
         self.fcs_yp = nn.ModuleList()
@@ -13,6 +15,14 @@ class SofaNet(nn.Module):
             self.fcs_alpha.append(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1]))
             self.fcs_xp.append(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1]))
             self.fcs_yp.append(nn.Linear(hidden_sizes[i], hidden_sizes[i + 1]))
+
+            # scaling weight and bias for diverse initialization patterns
+            self.fcs_alpha[-1].weight.data *= alpha_scaling
+            self.fcs_alpha[-1].bias.data *= alpha_scaling
+            self.fcs_xp[-1].weight.data *= xp_scaling
+            self.fcs_xp[-1].bias.data *= xp_scaling
+            self.fcs_yp[-1].weight.data *= yp_scaling
+            self.fcs_yp[-1].bias.data *= yp_scaling
 
     def forward(self, t):
         # forward
@@ -26,9 +36,16 @@ class SofaNet(nn.Module):
         alpha = self.fcs_alpha[-1](alpha).squeeze(1)
         xp = self.fcs_xp[-1](xp).squeeze(1)
         yp = self.fcs_yp[-1](yp).squeeze(1)
-        alpha = alpha - alpha[0]  # alpha(0) = 0
+
+        # initial condition at t=0
+        alpha = alpha - alpha[0]
         xp = xp - xp[0]
         yp = yp - yp[0]
+
+        # constrain only sign of variables
+        alpha = torch.abs(alpha)
+        xp = -torch.abs(xp)
+        yp = torch.abs(yp)
 
         # derivatives
         dummy = torch.ones_like(alpha, requires_grad=True, device=t.device)
