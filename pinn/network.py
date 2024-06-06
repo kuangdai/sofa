@@ -50,8 +50,21 @@ class SofaNet(nn.Module):
         dt_xp = torch.autograd.grad(o_xp_z, dummy, create_graph=True)[0]
         dt_yp = torch.autograd.grad(o_yp_z, dummy, create_graph=True)[0]
 
-        # initial condition at t=0; must be placed after derivatives
-        alpha = alpha - alpha[0]
-        xp = xp - xp[0]
-        yp = yp - yp[0]
-        return alpha, xp, yp, dt_alpha, dt_xp, dt_yp
+        # initial condition at t=0 and constrain sign
+        dt_alpha_sign = torch.sign(alpha - alpha[0]) * dt_alpha
+        dt_xp_sign = -torch.sign(xp - xp[0]) * dt_xp
+        dt_yp_sign = torch.sign(yp - yp[0]) * dt_yp
+
+        # handle singularity at t=0
+        dt_alpha0 = torch.where(dt_alpha_sign[1] >= 0, torch.abs(dt_alpha[0:1]), -torch.abs(dt_alpha[0:1]))
+        dt_xp0 = torch.where(dt_xp_sign[1] >= 0, torch.abs(dt_xp[0:1]), -torch.abs(dt_xp[0:1]))
+        dt_yp0 = torch.where(dt_yp_sign[1] >= 0, torch.abs(dt_yp[0:1]), -torch.abs(dt_yp[0:1]))
+        dt_alpha_sign = torch.cat((dt_alpha0, dt_alpha_sign[1:]))
+        dt_xp_sign = torch.cat((dt_xp0, dt_xp_sign[1:]))
+        dt_yp_sign = torch.cat((dt_yp0, dt_yp_sign[1:]))
+
+        # changing values after derivatives
+        alpha = torch.abs(alpha - alpha[0])
+        xp = -torch.abs(xp - xp[0])
+        yp = torch.abs(yp - yp[0])
+        return alpha, xp, yp, dt_alpha_sign, dt_xp_sign, dt_yp_sign
