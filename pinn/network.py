@@ -38,11 +38,6 @@ class SofaNet(nn.Module):
         xp = self.fcs_xp[-1](xp).squeeze(1)
         yp = self.fcs_yp[-1](yp).squeeze(1)
 
-        # initial condition at t=0
-        alpha = alpha - alpha[0]
-        xp = xp - xp[0]
-        yp = yp - yp[0]
-
         # constrain only sign of variables
         alpha = torch.abs(alpha)
         xp = -torch.abs(xp)
@@ -59,4 +54,9 @@ class SofaNet(nn.Module):
         dt_alpha = torch.autograd.grad(o_alpha_z, dummy, create_graph=True)[0]
         dt_xp = torch.autograd.grad(o_xp_z, dummy, create_graph=True)[0]
         dt_yp = torch.autograd.grad(o_yp_z, dummy, create_graph=True)[0]
+
+        # initial condition at t=0; must be placed after derivatives
+        alpha = alpha - alpha[0]
+        xp = xp - xp[0]
+        yp = yp - yp[0]
         return alpha, xp, yp, dt_alpha, dt_xp, dt_yp
