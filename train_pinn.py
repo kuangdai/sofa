@@ -25,6 +25,8 @@ if __name__ == "__main__":
                         help="consider envelope when computing area")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
+    parser.add_argument("--tanh", action="store_true",
+                        help="use tanh for activation")
     parser.add_argument("--scaling", type=float, nargs=3,
                         default=[1., 1., 1.], help="scaling network outputs for alpha, xp, yp")
     parser.add_argument("-l", "--lr", type=float,
@@ -33,6 +35,8 @@ if __name__ == "__main__":
                         default=0.5, help="decay rate of lr")
     parser.add_argument("--lr-decay-step", type=int,
                         default=1000, help="decay step of lr")
+    parser.add_argument("-w", "--weight-decay", type=float,
+                        default=0., help="weight decay")
     parser.add_argument("-e", "--epochs", type=int,
                         default=5000, help="number of epochs")
     parser.add_argument("-d", "--device", type=str,
@@ -45,11 +49,11 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     # model
-    model = SofaNet(hidden_sizes=args.hidden_sizes,
+    model = SofaNet(hidden_sizes=args.hidden_sizes, tanh=args.tanh,
                     alpha_scaling=args.scaling[0],
                     xp_scaling=args.scaling[1],
                     yp_scaling=args.scaling[2]).to(args.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_rate)
 

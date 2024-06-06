@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class SofaNet(nn.Module):
-    def __init__(self, hidden_sizes=None, alpha_scaling=1., xp_scaling=1., yp_scaling=1.):
+    def __init__(self, hidden_sizes=None, tanh=False, alpha_scaling=1., xp_scaling=1., yp_scaling=1.):
         super().__init__()
         if hidden_sizes is None:
             hidden_sizes = [128, 128, 128]
@@ -23,6 +23,7 @@ class SofaNet(nn.Module):
             self.fcs_xp[-1].bias.data *= xp_scaling
             self.fcs_yp[-1].weight.data *= yp_scaling
             self.fcs_yp[-1].bias.data *= yp_scaling
+        self.act = torch.tanh if tanh else torch.relu
 
     def forward(self, t):
         # forward
@@ -30,9 +31,9 @@ class SofaNet(nn.Module):
         t = t.unsqueeze(1) + z
         alpha, xp, yp = t, t, t
         for fc_alpha, fc_xp, fc_yp in zip(self.fcs_alpha[:-1], self.fcs_xp[:-1], self.fcs_yp[:-1]):
-            alpha = torch.relu(fc_alpha(alpha))
-            xp = torch.relu(fc_xp(xp))
-            yp = torch.relu(fc_yp(yp))
+            alpha = self.act(fc_alpha(alpha))
+            xp = self.act(fc_xp(xp))
+            yp = self.act(fc_yp(yp))
         alpha = self.fcs_alpha[-1](alpha).squeeze(1)
         xp = self.fcs_xp[-1](xp).squeeze(1)
         yp = self.fcs_yp[-1](yp).squeeze(1)
