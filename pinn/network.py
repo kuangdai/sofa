@@ -38,11 +38,6 @@ class SofaNet(nn.Module):
         xp = self.fcs_xp[-1](xp).squeeze(1)
         yp = self.fcs_yp[-1](yp).squeeze(1)
 
-        # constrain only sign of variables
-        alpha = torch.abs(alpha)
-        xp = -torch.abs(xp)
-        yp = torch.abs(yp)
-
         # derivatives
         dummy = torch.ones_like(alpha, requires_grad=True, device=t.device)
         o_alpha = (dummy * alpha).sum()
