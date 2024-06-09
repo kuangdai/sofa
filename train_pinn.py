@@ -81,7 +81,7 @@ if __name__ == "__main__":
         loss.backward()
         optimizer.step()
         scheduler.step()
-        progress_bar.set_postfix(area=f"{area.item():.4e}", largest_area=f"{largest_area:.4e}")
+        progress_bar.set_postfix(area=f"{area.item():.5e}", largest_area=f"{largest_area:.5e}")
 
     # save
     alpha, xp, yp, dt_alpha, dt_xp, dt_yp = model.forward(t)
