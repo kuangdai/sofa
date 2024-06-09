@@ -73,7 +73,7 @@ if __name__ == "__main__":
         area = compute_area(t, alpha, xp, yp, dt_alpha, dt_xp, dt_yp,
                             n_areas=args.n_areas, envelope=args.envelope, return_geometry=False)
         loss = -area + args.beta_factor * torch.relu(beta - alpha[-1])
-        if area > largest_area:
+        if area.item() > largest_area:
             # checkpoint best
             largest_area = area.item()
             torch.save(model.state_dict(), f"{out_dir}/best_model.pt")
