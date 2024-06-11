@@ -6,7 +6,7 @@ a5=1.28700222  # asin(24/25)
 a6=1.38947655  # asin(60/61)
 a7=1.41725254  # asin(84/85)
 
-python train_upper.py -a $a1 $a2 $a3 $a4 $a5 -N eq26
-python train_upper.py -a $a1 $a2 $a3 -b $a4 -B $a5 -N eq27
-python train_upper.py -a $a1 $a2 $a3 -b $a5 -B $a6 -N eq28
-python train_upper.py -a $a1 $a2 $a3 $a4 -b $a6 -B $a7 -N eq29
+python train_upper.py -a $a1 $a2 $a3 $a4 $a5 -N eq26 -s $1
+python train_upper.py -a $a1 $a2 $a3 -b $a4 -B $a5 -N eq27 -s $1
+python train_upper.py -a $a1 $a2 $a3 -b $a5 -B $a6 -N eq28 -s $1
+python train_upper.py -a $a1 $a2 $a3 $a4 -b $a6 -B $a7 -N eq29 -s $1
