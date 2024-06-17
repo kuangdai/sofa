@@ -28,7 +28,7 @@ class SofaNet(nn.Module):
             "tanh": torch.tanh,
             "softplus": torch.nn.functional.softplus
         }
-        self.act = act_dict["activation"]
+        self.act = act_dict[activation]
 
     def forward(self, t):
         # forward
