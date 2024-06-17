@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class SofaNet(nn.Module):
-    def __init__(self, hidden_sizes=None, tanh=False, alpha_scaling=1., xp_scaling=1., yp_scaling=1.):
+    def __init__(self, hidden_sizes=None, activation="relu", alpha_scaling=1., xp_scaling=1., yp_scaling=1.):
         super().__init__()
         if hidden_sizes is None:
             hidden_sizes = [128, 128, 128]
@@ -23,7 +23,12 @@ class SofaNet(nn.Module):
             self.fcs_xp[-1].bias.data *= xp_scaling
             self.fcs_yp[-1].weight.data *= yp_scaling
             self.fcs_yp[-1].bias.data *= yp_scaling
-        self.act = torch.tanh if tanh else torch.relu
+        act_dict = {
+            "relu": torch.relu,
+            "tanh": torch.tanh,
+            "softplus": torch.nn.functional.softplus
+        }
+        self.act = act_dict["activation"]
 
     def forward(self, t):
         # forward

@@ -25,8 +25,8 @@ if __name__ == "__main__":
                         help="consider envelope when computing area")
     parser.add_argument("--hidden-sizes", type=int, nargs="+",
                         default=[128, 128, 128], help="hidden sizes of model")
-    parser.add_argument("--tanh", action="store_true",
-                        help="use tanh for activation")
+    parser.add_argument("--activation", type=str, default="relu",
+                        help="activation function")
     parser.add_argument("--scaling", type=float, nargs=3,
                         default=[1., 1., 1.], help="scaling network outputs for alpha, xp, yp")
     parser.add_argument("-l", "--lr", type=float,
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     # model
-    model = SofaNet(hidden_sizes=args.hidden_sizes, tanh=args.tanh,
+    model = SofaNet(hidden_sizes=args.hidden_sizes, activation=args.activation,
                     alpha_scaling=args.scaling[0],
                     xp_scaling=args.scaling[1],
                     yp_scaling=args.scaling[2]).to(args.device)
